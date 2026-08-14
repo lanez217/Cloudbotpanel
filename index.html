@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLOUDBOT PANEL</title>
+<script src="/socket.io/socket.io.js"></script>
+<style>
+    *{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif}
+    body{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;min-height:100vh}
+   .container{max-width:500px;margin:0 auto;padding:20px}
+   .card{background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);border-radius:20px;padding:25px;margin:15px 0;border:1px solid rgba(255,255,255,0.2)}
+    h1{text-align:center;margin-bottom:10px;font-size:28px}
+   .stats{display:flex;justify-content:space-around;text-align:center}
+   .stat h2{font-size:32px;color:#ffd700}
+    input{width:100%;padding:12px;border-radius:10px;border:none;margin:10px 0;background:rgba(255,255,255,0.2);color:#fff}
+    button{width:100%;padding:14px;border:none;border-radius:10px;background:#ffd700;color:#000;font-weight:bold;font-size:16px;cursor:pointer}
+    button:hover{opacity:0.9}
+    #qr img{width:200px;margin:10px auto;display:block}
+   .status{padding:10px;border-radius:8px;text-align:center;margin:10px 0}
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>⚡ CLOUDBOT PANEL ⚡</h1>
+
+    <div class="card">
+        <div class="stats">
+            <div class="stat"><h2 id="bots">0</h2><p>Bots Online</p></div>
+            <div class="stat"><h2 id="users">0</h2><p>Total Users</p></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Connect Your Bot</h3>
+        <input type="text" id="phone" placeholder="Enter WhatsApp number: 234xxx">
+        <button onclick="connectBot()">Connect Bot</button>
+        <div id="status" class="status"></div>
+        <div id="qr"></div>
+        <div id="code"></div>
+        <button onclick="disconnectBot()" style="background:#ff4d4d;color:#fff;margin-top:10px">Disconnect</button>
+    </div>
+
+    <div class="card">
+        <h3>How to use</h3>
+        <p>1. Enter your WhatsApp number<br>2. Scan QR or use Pairing Code<br>3. Type.menu on WhatsApp</p>
+    </div>
+</div>
+
+<script>
+const socket = io();
+const userId = 'user_' + Math.random().toString(36).substr(2,9);
+
+function connectBot(){
+    const phone = document.getElementById('phone').value;
+    socket.emit('connect_bot', {userId, phone});
+}
+
+function disconnectBot(){
+    socket.emit('disconnect_bot', {userId});
+}
+
+socket.on('status', msg => document.getElementById('status').innerText = msg);
+socket.on('qr', qr => document.getElementById('qr').innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${qr}">`);
+socket.on('pairing_code', code => document.getElementById('code').innerText = 'Pairing Code: ' + code);
+socket.on('connected', () => document.getElementById('status').innerText = '✅ Bot Connected!');
+socket.on('disconnected', () => {
+    document.getElementById('status').innerText = '❌ Bot Disconnected';
+    document.getElementById('qr').innerHTML = '';
+});
+
+setInterval(async ()=>{
+    const res = await fetch('/api/stats');
+    const data = await res.json();
+    document.getElementById('bots').innerText = data.botsOnline;
+    document.getElementById('users').innerText = data.totalUsers;
+}, 3000);
+</script>
+</body>
+</html>
