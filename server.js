@@ -9,13 +9,15 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.use(express.static('public'));
+// Serve static files from the root directory
+app.use(express.static(__dirname));
 app.use(express.json());
 
 let activeBots = new Map(); // userId: {sock, phone}
 
+// Serve index.html from the root directory
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Real stats API
