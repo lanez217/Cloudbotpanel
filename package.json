@@ -1,7 +1,7 @@
 {
-  "name": "cloudbot",
+  "name": "cloudbotpanel",
   "version": "1.0.0",
-  "description": "WhatsApp Cloud API bot with Groq AI",
+  "description": "WhatsApp Baileys bot with Groq AI",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
@@ -11,7 +11,8 @@
     "groq-sdk": "latest",
     "axios": "^1.7.2",
     "dotenv": "^16.4.5",
-    "socket.io": "latest"
+    "socket.io": "latest",
+    "@whiskeysockets/baileys": "latest"
   },
   "engines": {
     "node": "18.x"
