@@ -1,18 +1,18 @@
 {
-  "name": "cloudbot-panel",
-  "version": "2.0.0",
-  "description": "Multi-User WhatsApp Bot Panel with AI",
-  "main": "server.js",
+  "name": "cloudbot",
+  "version": "1.0.0",
+  "description": "WhatsApp Cloud API bot with Groq AI",
+  "main": "index.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node index.js"
   },
   "dependencies": {
-    "@whiskeysockets/baileys": "^7.0.0-rc1",
     "express": "^4.19.2",
-    "socket.io": "^4.7.5",
-    "dotenv": "^17.4.2",
-    "groq-sdk": "^0.4.1",
+    "groq-sdk": "latest",
     "axios": "^1.7.2",
-    "qrcode-terminal": "^0.12.0"
+    "dotenv": "^16.4.5"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }
