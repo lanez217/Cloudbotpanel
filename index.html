@@ -5,22 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>⚡ CloudBot Panel Pro</title>
 <script src="/socket.io/socket.io.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
     :root {
-        --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
-        --glass-bg: rgba(255, 255, 255, 0.05);
-        --glass-border: rgba(255, 255, 255, 0.12);
+        --bg-gradient: radial-gradient(circle at top left, #1e1b4b 0%, #0f172a 40%, #020617 100%);
+        --glass-bg: rgba(255, 255, 255, 0.03);
+        --glass-border: rgba(255, 255, 255, 0.08);
         --accent-glow: #6366f1;
+        --accent-cyan: #38bdf8;
         --accent-gold: #f59e0b;
         --text-primary: #f8fafc;
         --text-secondary: #94a3b8;
-        --danger-color: #ef4444;
-        --success-color: #10b981;
+        --success-glow: #10b981;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-    
+
     body {
         background: var(--bg-gradient);
         color: var(--text-primary);
@@ -29,6 +29,26 @@
         align-items: center;
         justify-content: center;
         padding: 20px;
+        overflow-x: hidden;
+    }
+
+    /* Ambient Glow Background Element */
+    .glow-orb {
+        position: fixed;
+        width: 300px;
+        height: 300px;
+        background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(0,0,0,0) 70%);
+        top: 20%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        z-index: 0;
+        animation: pulseOrb 6s ease-in-out infinite alternate;
+    }
+
+    @keyframes pulseOrb {
+        0% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.5; }
+        100% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.9; }
     }
 
     .container {
@@ -37,6 +57,9 @@
         display: flex;
         flex-direction: column;
         gap: 20px;
+        position: relative;
+        z-index: 1;
+        animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     /* Header Styling */
@@ -44,54 +67,70 @@
     .header h1 {
         font-size: 28px;
         font-weight: 800;
-        background: linear-gradient(90deg, #818cf8, #c084fc, #f59e0b);
+        background: linear-gradient(90deg, #818cf8, #c084fc, #38bdf8);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         letter-spacing: -0.5px;
+        text-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
     }
-    .header p { color: var(--text-secondary); font-size: 14px; margin-top: 4px; }
+    .header p { color: var(--text-secondary); font-size: 13px; margin-top: 4px; font-weight: 500; }
 
     /* Glass Cards */
     .card {
         background: var(--glass-bg);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
         border: 1px solid var(--glass-border);
         border-radius: 24px;
         padding: 24px;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+        transition: transform 0.3s ease, border-color 0.3s ease;
+    }
+    .card:hover {
+        border-color: rgba(99, 102, 241, 0.25);
     }
 
     /* Stats Section */
-    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
     .stat-box {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.04);
         border-radius: 16px;
-        padding: 16px;
+        padding: 14px 10px;
         text-align: center;
+        transition: all 0.3s ease;
     }
-    .stat-box h2 { font-size: 32px; font-weight: 700; color: #a7f3d0; margin-bottom: 2px; }
-    .stat-box p { color: var(--text-secondary); font-size: 13px; font-weight: 500; }
+    .stat-box:hover {
+        background: rgba(255, 255, 255, 0.03);
+        transform: translateY(-2px);
+    }
+    .stat-box h2 {
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--accent-cyan);
+        font-family: 'JetBrains Mono', monospace;
+    }
+    .stat-box p { color: var(--text-secondary); font-size: 11px; font-weight: 600; text-transform: uppercase; margin-top: 4px; }
 
-    /* Forms & Inputs */
+    /* Inputs */
     .input-group { margin-bottom: 16px; }
-    .input-group label { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; font-weight: 500; }
+    .input-group label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
     
     input {
         width: 100%;
         padding: 14px 16px;
-        border-radius: 12px;
+        border-radius: 14px;
         border: 1px solid var(--glass-border);
-        background: rgba(0, 0, 0, 0.2);
+        background: rgba(0, 0, 0, 0.3);
         color: var(--text-primary);
         font-size: 15px;
+        font-family: 'JetBrains Mono', monospace;
         outline: none;
-        transition: all 0.3s ease;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
     input:focus {
         border-color: var(--accent-glow);
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.25);
     }
 
     /* Buttons */
@@ -99,139 +138,169 @@
         width: 100%;
         padding: 14px;
         border: none;
-        border-radius: 12px;
-        font-weight: 600;
-        font-size: 15px;
+        border-radius: 14px;
+        font-weight: 700;
+        font-size: 14px;
         cursor: pointer;
         transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
+        position: relative;
+        overflow: hidden;
     }
     .btn-primary {
         background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
         color: #fff;
-        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        box-shadow: 0 4px 20px rgba(99, 102, 241, 0.35);
     }
-    .btn-primary:hover { transform: translateY(-1px); opacity: 0.95; }
+    .btn-primary:active { transform: scale(0.98); }
     
     .btn-danger {
-        background: rgba(239, 68, 68, 0.15);
+        background: rgba(239, 68, 68, 0.1);
         color: #fca5a5;
-        border: 1px solid rgba(239, 68, 68, 0.3);
+        border: 1px solid rgba(239, 68, 68, 0.2);
         margin-top: 12px;
     }
-    .btn-danger:hover { background: rgba(239, 68, 68, 0.25); }
+    .btn-danger:hover { background: rgba(239, 68, 68, 0.2); }
 
-    /* Output Displays */
+    /* Status Display */
     .status-badge {
         font-size: 13px;
-        padding: 8px 12px;
-        border-radius: 8px;
+        padding: 10px 14px;
+        border-radius: 12px;
         text-align: center;
-        margin: 12px 0;
+        margin: 14px 0;
         display: none;
-        background: rgba(255, 255, 255, 0.05);
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--glass-border);
+        font-weight: 500;
+        animation: fadeIn 0.4s ease;
     }
 
-    .qr-container {
-        display: none;
-        text-align: center;
-        margin: 20px 0;
-        padding: 15px;
-        background: #fff;
-        border-radius: 16px;
-    }
-    .qr-container img { width: 180px; height: 180px; display: block; margin: 0 auto; }
-
+    /* Code Display */
     .code-container {
         display: none;
         text-align: center;
         margin: 20px 0;
-        padding: 16px;
-        background: rgba(99, 102, 241, 0.1);
+        padding: 20px;
+        background: rgba(99, 102, 241, 0.08);
         border: 1px dashed var(--accent-glow);
-        border-radius: 16px;
+        border-radius: 18px;
+        animation: zoomIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .code-label { font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
+    .code-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
     .code-value {
-        font-size: 26px;
+        font-size: 30px;
         font-weight: 800;
-        letter-spacing: 4px;
+        letter-spacing: 6px;
         color: var(--accent-gold);
-        margin-top: 4px;
-        font-family: monospace;
+        margin: 10px 0;
+        font-family: 'JetBrains Mono', monospace;
+        text-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
     }
+    .copy-btn {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--glass-border);
+        color: var(--text-primary);
+        padding: 8px 16px;
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .copy-btn:hover { background: rgba(255, 255, 255, 0.15); }
 
-    /* How to Use Section */
+    /* Steps Display */
     .steps { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
-    .steps li { display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--text-secondary); }
+    .steps li { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text-secondary); }
     .step-num {
         width: 24px;
         height: 24px;
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.08);
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 700;
-        color: var(--text-primary);
+        color: var(--accent-cyan);
+    }
+
+    /* Footer */
+    .footer {
+        text-align: center;
+        margin-top: 10px;
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+    .footer a {
+        color: var(--accent-cyan);
+        text-decoration: none;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }
+
+    /* Keyframe Animations */
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes zoomIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
     }
 </style>
 </head>
 <body>
 
+<div class="glow-orb"></div>
+
 <div class="container">
     <div class="header">
         <h1>⚡ CLOUDBOT PANEL</h1>
-        <p>Manage & Connect your WhatsApp bot instances</p>
+        <p>Next-Gen WhatsApp Instance Manager</p>
     </div>
 
-    <!-- Stats -->
     <div class="card">
         <div class="stats">
-            <div class="stat-box">
-                <h2 id="bots">0</h2>
-                <p>Active Bots</p>
-            </div>
-            <div class="stat-box">
-                <h2 id="users">0</h2>
-                <p>Total Users</p>
-            </div>
+            <div class="stat-box"><h2 id="bots">0</h2><p>Active</p></div>
+            <div class="stat-box"><h2 id="users">0</h2><p>Users</p></div>
+            <div class="stat-box"><h2 id="ping">--</h2><p>Ping</p></div>
         </div>
     </div>
 
-    <!-- Connection Form -->
     <div class="card">
         <div class="input-group">
             <label for="phone">WhatsApp Phone Number</label>
-            <input type="tel" id="phone" placeholder="e.g. 2348123456789">
+            <input type="tel" id="phone" placeholder="233597789459">
         </div>
 
         <button class="btn btn-primary" onclick="connectBot()">Connect Instance</button>
 
         <div id="status" class="status-badge"></div>
 
-        <!-- Pairing Displays -->
         <div id="qr" class="qr-container"></div>
+        
         <div id="code" class="code-container">
-            <div class="code-label">Your Pairing Code</div>
-            <div id="code-val" class="code-value">------</div>
+            <div class="code-label">WhatsApp Pairing Code</div>
+            <div id="code-val" class="code-value">--------</div>
+            <button class="copy-btn" onclick="copyCode()">📋 Tap to Copy Code</button>
         </div>
 
-        <button class="btn btn-danger" onclick="disconnectBot()">Disconnect Bot</button>
+        <button class="btn btn-danger" onclick="disconnectBot()">Disconnect Instance</button>
     </div>
 
-    <!-- Instructions -->
     <div class="card">
-        <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">Quick Setup Guide</h3>
+        <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Setup Guide</h3>
         <ul class="steps">
-            <li><span class="step-num">1</span> Enter WhatsApp number with country code</li>
-            <li><span class="step-num">2</span> Scan the QR code or copy the pairing code</li>
-            <li><span class="step-num">3</span> Paste in WhatsApp → Linked Devices</li>
+            <li><span class="step-num">1</span> Enter number with country code</li>
+            <li><span class="step-num">2</span> Copy generated 8-character code</li>
+            <li><span class="step-num">3</span> Open WhatsApp → Linked Devices → Link with Phone</li>
         </ul>
+    </div>
+
+    <div class="footer">
+        Powered by <a href="#">LANEZ</a> &copy; 2026
     </div>
 </div>
 
@@ -251,7 +320,7 @@ function connectBot() {
         setStatus('⚠️ Please enter a valid phone number');
         return;
     }
-    setStatus('Initializing connection...');
+    setStatus('Requesting WhatsApp pairing code...');
     socket.emit('connect_bot', { userId, phone });
 }
 
@@ -259,7 +328,12 @@ function disconnectBot() {
     socket.emit('disconnect_bot', { userId });
 }
 
-// Socket Events
+function copyCode() {
+    const codeText = document.getElementById('code-val').innerText;
+    navigator.clipboard.writeText(codeText);
+    alert('Pairing Code copied to clipboard: ' + codeText);
+}
+
 socket.on('status', msg => setStatus(msg));
 
 socket.on('qr', qr => {
@@ -269,15 +343,14 @@ socket.on('qr', qr => {
 });
 
 socket.on('pairing_code', code => {
-    const codeContainer = document.getElementById('code');
-    const codeVal = document.getElementById('code-val');
-    codeContainer.style.display = 'block';
-    codeVal.innerText = code;
+    document.getElementById('code').style.display = 'block';
+    document.getElementById('code-val').innerText = code;
 });
 
 socket.on('connected', () => {
     setStatus('✅ Instance Connected Successfully!');
     document.getElementById('qr').style.display = 'none';
+    document.getElementById('code').style.display = 'none';
 });
 
 socket.on('disconnected', () => {
@@ -286,18 +359,22 @@ socket.on('disconnected', () => {
     document.getElementById('code').style.display = 'none';
 });
 
-// Update Live Stats
-setInterval(async () => {
-    try {
-        const res = await fetch('/api/stats');
-        const data = await res.json();
-        document.getElementById('bots').innerText = data.botsOnline;
-        document.getElementById('users').innerText = data.totalUsers;
-    } catch(err) {
-        console.error('Stats fetch failed');
-    }
+// Real-Time Ping Latency Tracker
+setInterval(() => {
+    const start = Date.now();
+    fetch('/api/stats')
+        .then(res => res.json())
+        .then(data => {
+            const latency = Date.now() - start;
+            document.getElementById('bots').innerText = data.botsOnline;
+            document.getElementById('users').innerText = data.totalUsers;
+            document.getElementById('ping').innerText = latency + 'ms';
+        })
+        .catch(() => {
+            document.getElementById('ping').innerText = 'offline';
+        });
 }, 3000);
 </script>
 </body>
-           </html>
-       
+    </html>
+    
