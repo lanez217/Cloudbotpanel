@@ -16,7 +16,6 @@
         --accent-gold: #f59e0b;
         --text-primary: #f8fafc;
         --text-secondary: #94a3b8;
-        --success-glow: #10b981;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
@@ -32,7 +31,6 @@
         overflow-x: hidden;
     }
 
-    /* Ambient Glow Background Element */
     .glow-orb {
         position: fixed;
         width: 300px;
@@ -62,7 +60,6 @@
         animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    /* Header Styling */
     .header { text-align: center; }
     .header h1 {
         font-size: 28px;
@@ -75,7 +72,6 @@
     }
     .header p { color: var(--text-secondary); font-size: 13px; margin-top: 4px; font-weight: 500; }
 
-    /* Glass Cards */
     .card {
         background: var(--glass-bg);
         backdrop-filter: blur(20px);
@@ -86,11 +82,8 @@
         box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
         transition: transform 0.3s ease, border-color 0.3s ease;
     }
-    .card:hover {
-        border-color: rgba(99, 102, 241, 0.25);
-    }
+    .card:hover { border-color: rgba(99, 102, 241, 0.25); }
 
-    /* Stats Section */
     .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
     .stat-box {
         background: rgba(0, 0, 0, 0.2);
@@ -100,10 +93,7 @@
         text-align: center;
         transition: all 0.3s ease;
     }
-    .stat-box:hover {
-        background: rgba(255, 255, 255, 0.03);
-        transform: translateY(-2px);
-    }
+    .stat-box:hover { background: rgba(255, 255, 255, 0.03); transform: translateY(-2px); }
     .stat-box h2 {
         font-size: 24px;
         font-weight: 800;
@@ -112,7 +102,6 @@
     }
     .stat-box p { color: var(--text-secondary); font-size: 11px; font-weight: 600; text-transform: uppercase; margin-top: 4px; }
 
-    /* Inputs */
     .input-group { margin-bottom: 16px; }
     .input-group label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
     
@@ -128,12 +117,8 @@
         outline: none;
         transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    input:focus {
-        border-color: var(--accent-glow);
-        box-shadow: 0 0 20px rgba(99, 102, 241, 0.25);
-    }
+    input:focus { border-color: var(--accent-glow); box-shadow: 0 0 20px rgba(99, 102, 241, 0.25); }
 
-    /* Buttons */
     .btn {
         width: 100%;
         padding: 14px;
@@ -143,25 +128,13 @@
         font-size: 14px;
         cursor: pointer;
         transition: all 0.2s ease;
-        position: relative;
-        overflow: hidden;
     }
-    .btn-primary {
-        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-        color: #fff;
-        box-shadow: 0 4px 20px rgba(99, 102, 241, 0.35);
-    }
+    .btn-primary { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: #fff; box-shadow: 0 4px 20px rgba(99, 102, 241, 0.35); }
     .btn-primary:active { transform: scale(0.98); }
     
-    .btn-danger {
-        background: rgba(239, 68, 68, 0.1);
-        color: #fca5a5;
-        border: 1px solid rgba(239, 68, 68, 0.2);
-        margin-top: 12px;
-    }
+    .btn-danger { background: rgba(239, 68, 68, 0.1); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.2); margin-top: 12px; }
     .btn-danger:hover { background: rgba(239, 68, 68, 0.2); }
 
-    /* Status Display */
     .status-badge {
         font-size: 13px;
         padding: 10px 14px;
@@ -175,7 +148,6 @@
         animation: fadeIn 0.4s ease;
     }
 
-    /* Code Display */
     .code-container {
         display: none;
         text-align: center;
@@ -209,7 +181,6 @@
     }
     .copy-btn:hover { background: rgba(255, 255, 255, 0.15); }
 
-    /* Steps Display */
     .steps { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
     .steps li { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text-secondary); }
     .step-num {
@@ -225,30 +196,12 @@
         color: var(--accent-cyan);
     }
 
-    /* Footer */
-    .footer {
-        text-align: center;
-        margin-top: 10px;
-        font-size: 12px;
-        color: var(--text-secondary);
-    }
-    .footer a {
-        color: var(--accent-cyan);
-        text-decoration: none;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-    }
+    .footer { text-align: center; margin-top: 10px; font-size: 12px; color: var(--text-secondary); }
+    .footer a { color: var(--accent-cyan); text-decoration: none; font-weight: 700; letter-spacing: 0.5px; }
 
-    /* Keyframe Animations */
-    @keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes zoomIn {
-        from { opacity: 0; transform: scale(0.95); }
-        to { opacity: 1; transform: scale(1); }
-    }
+    @keyframes zoomIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 </style>
 </head>
 <body>
@@ -359,7 +312,7 @@ socket.on('disconnected', () => {
     document.getElementById('code').style.display = 'none';
 });
 
-// Real-Time Ping Latency Tracker
+// Ping Latency Tracker
 setInterval(() => {
     const start = Date.now();
     fetch('/api/stats')
@@ -376,5 +329,5 @@ setInterval(() => {
 }, 3000);
 </script>
 </body>
-    </html>
+            </html>
     
