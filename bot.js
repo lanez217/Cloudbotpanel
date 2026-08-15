@@ -17,16 +17,24 @@ async function startBot(userId, phone, io, socket) {
             socket.emit('qr', qr);
         }
 
-        // Request pairing code if not registered
+        // Generate real WhatsApp pairing code
         if (!sock.authState.creds.registered && phone) {
             try {
-                // Request pairing code using formatted phone number
+                // Strip '+' or extra symbols (must be pure numbers: e.g. 233597789459)
                 const cleanPhone = phone.replace(/[^0-9]/g, '');
-                const code = await sock.requestPairingCode(cleanPhone);
-                socket.emit('pairing_code', code || 'LANEZ');
+                
+                // Slight delay to ensure socket readiness
+                setTimeout(async () => {
+                    try {
+                        const code = await sock.requestPairingCode(cleanPhone);
+                        socket.emit('pairing_code', code);
+                    } catch (err) {
+                        console.error('Error fetching code:', err);
+                        socket.emit('status', 'Failed to generate code. Check phone number.');
+                    }
+                }, 3000);
             } catch (err) {
-                console.error('Error requesting pairing code:', err);
-                socket.emit('pairing_code', 'LANEZ');
+                console.error('Pairing error:', err);
             }
         }
 
@@ -42,7 +50,6 @@ async function startBot(userId, phone, io, socket) {
         }
     });
 
-    // Handle messages (Fixed: marked handler as async)
     sock.ev.on('messages.upsert', async (m) => {
         try {
             const msg = m.messages[0];
@@ -63,8 +70,7 @@ async function startBot(userId, phone, io, socket) {
 }
 
 function stopBot(userId) {
-    // Logic to clear instance/auth if needed
+    // Clear instance if needed
 }
 
 module.exports = { startBot, stopBot };
-            
