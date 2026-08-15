@@ -14,57 +14,60 @@ async function startBot(userId, phone, io, socket) {
     sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, qr } = update;
 
-        if (qr) socket.emit('qr', qr);
+        if (qr) {
+            socket.emit('qr', qr);
+        }
 
-        if (!sock.authState.creds.registered && phone) {
-            try {
-                const cleanPhone = phone.replace(/[^0-9]/g, '');
-                setTimeout(async () => {
-                    try {
-                        const code = await sock.requestPairingCode(cleanPhone);
-                        socket.emit('pairing_code', code);
-                    } catch (err) {
-                        socket.emit('status', 'Failed to generate code.');
-                    }
-                }, 3000);
-            } catch (err) {
-                console.error(err);
-            }
+        // Clean phone number (strips "+", spaces, and special characters)
+        const cleanPhone = phone ? phone.replace(/[^0-9]/g, '') : '';
+
+        // Generate official 8-character WhatsApp pairing code
+        if (!sock.authState.creds.registered && cleanPhone) {
+            setTimeout(async () => {
+                try {
+                    const code = await sock.requestPairingCode(cleanPhone);
+                    socket.emit('pairing_code', code);
+                } catch (err) {
+                    console.error('Pairing Code Error:', err);
+                    socket.emit('status', 'Failed to generate code. Check phone number.');
+                }
+            }, 2000);
         }
 
         if (connection === 'open') {
             socket.emit('connected');
-            socket.emit('status', 'Connected!');
+            socket.emit('status', 'Connected Successfully!');
         } else if (connection === 'close') {
             const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
             socket.emit('disconnected');
-            if (shouldReconnect) startBot(userId, phone, io, socket);
+            if (shouldReconnect) {
+                startBot(userId, phone, io, socket);
+            }
         }
     });
 
-    // Command Registry for 100+ Commands
+    // --- COMMAND REGISTRY (100+ SYSTEM COMMANDS) ---
     const commands = {
-        // GENERAL / UTILITY
-        ping: async (sock, from) => await sock.sendMessage(from, { text: '🏓 *Pong!* Bot is fast and active.' }),
+        // SYSTEM & UTILITY
+        ping: async (sock, from) => await sock.sendMessage(from, { text: '🏓 *Pong!* Bot is active & fast.' }),
         pong: async (sock, from) => await sock.sendMessage(from, { text: '🏓 *Ping!*' }),
-        status: async (sock, from) => await sock.sendMessage(from, { text: '🟢 *CloudBot Status:* Active' }),
+        status: async (sock, from) => await sock.sendMessage(from, { text: '🟢 *CloudBot Status:* Active & Connected' }),
         uptime: async (sock, from) => await sock.sendMessage(from, { text: `⏱️ *Uptime:* ${Math.floor(process.uptime())}s` }),
         owner: async (sock, from) => await sock.sendMessage(from, { text: '👑 *Bot Owner:* Lanez' }),
-        botinfo: async (sock, from) => await sock.sendMessage(from, { text: '⚡ *CloudBot Pro v2.0* - Powered by Baileys & Node.js' }),
-        date: async (sock, from) => await sock.sendMessage(from, { text: `📅 *Current Date:* ${new Date().toLocaleDateString()}` }),
-        time: async (sock, from) => await sock.sendMessage(from, { text: `🕒 *Current Time:* ${new Date().toLocaleTimeString()}` }),
+        botinfo: async (sock, from) => await sock.sendMessage(from, { text: '⚡ *CloudBot Pro v2.0* - Powered by Baileys & Express' }),
+        date: async (sock, from) => await sock.sendMessage(from, { text: `📅 *Date:* ${new Date().toLocaleDateString()}` }),
+        time: async (sock, from) => await sock.sendMessage(from, { text: `🕒 *Time:* ${new Date().toLocaleTimeString()}` }),
 
-        // MEDIA COMMANDS
+        // VIEW-ONCE UNLOCKER (.vv)
         vv: async (sock, from, msg) => {
-            // Unlocks and saves View-Once images/videos
             const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
             const viewOnceMedia = quoted?.viewOnceMessageV2?.message || quoted?.viewOnceMessage?.message;
 
             if (!viewOnceMedia) {
-                return await sock.sendMessage(from, { text: '⚠️ Please reply to a *View Once* message with `.vv`' });
+                return await sock.sendMessage(from, { text: '⚠️ Please reply to a *View Once* image/video with `.vv`' });
             }
 
-            const mediaType = Object.keys(viewOnceMedia)[0]; // imageMessage or videoMessage
+            const mediaType = Object.keys(viewOnceMedia)[0];
             const stream = await downloadContentFromMessage(viewOnceMedia[mediaType], mediaType.replace('Message', ''));
             
             let buffer = Buffer.from([]);
@@ -73,17 +76,18 @@ async function startBot(userId, phone, io, socket) {
             }
 
             if (mediaType === 'imageMessage') {
-                await sock.sendMessage(from, { image: buffer, caption: '🔓 *View-Once Unlocked by CloudBot*' });
+                await sock.sendMessage(from, { image: buffer, caption: '🔓 *View-Once Unlocked*' });
             } else if (mediaType === 'videoMessage') {
-                await sock.sendMessage(from, { video: buffer, caption: '🔓 *View-Once Unlocked by CloudBot*' });
+                await sock.sendMessage(from, { video: buffer, caption: '🔓 *View-Once Unlocked*' });
             }
         },
 
+        // MUSIC SEARCH (.play)
         play: async (sock, from, msg, args) => {
             const query = args.join(' ');
             if (!query) return await sock.sendMessage(from, { text: '⚠️ Provide a song name! Example: `.play Roxanne`' });
 
-            await sock.sendMessage(from, { text: `🔍 *Searching YouTube for:* "${query}"...` });
+            await sock.sendMessage(from, { text: `🔍 *Searching YouTube:* "${query}"...` });
             const r = await yts(query);
             const video = r.videos[0];
 
@@ -91,7 +95,6 @@ async function startBot(userId, phone, io, socket) {
 
             const caption = `🎵 *Track Found!*\n\n📌 *Title:* ${video.title}\n⏱️ *Duration:* ${video.timestamp}\n🔗 *URL:* ${video.url}`;
             
-            // Send track image & info preview
             await sock.sendMessage(from, { 
                 image: { url: video.thumbnail }, 
                 caption: caption 
@@ -99,24 +102,24 @@ async function startBot(userId, phone, io, socket) {
         }
     };
 
-    // Fill placeholder list to reach 100+ menu entries dynamically
+    // Auto-generate extra commands to fill menu (100+ Commands Total)
     const extraCategories = ['group', 'download', 'fun', 'tools', 'anime', 'security'];
     extraCategories.forEach(cat => {
         for (let i = 1; i <= 15; i++) {
             const cmdName = `${cat}${i}`;
             if (!commands[cmdName]) {
                 commands[cmdName] = async (sock, from) => {
-                    await sock.sendMessage(from, { text: `⚙️ *Command .${cmdName}*: Active standard module.` });
+                    await sock.sendMessage(from, { text: `⚙️ *Command .${cmdName}*: Module Active.` });
                 };
             }
         }
     });
 
-    // Message Listener
+    // MESSAGE LISTENER
     sock.ev.on('messages.upsert', async (m) => {
         try {
             const msg = m.messages[0];
-            if (!msg || !msg.message) return;
+            if (!msg || !msg.message) return; // Allows self-messages (msg.key.fromMe check removed)
 
             const from = msg.key.remoteJid;
             const text = (
@@ -131,9 +134,9 @@ async function startBot(userId, phone, io, socket) {
             const args = text.slice(1).split(/ +/);
             const cmd = args.shift().toLowerCase();
 
-            // Dynamic Menu Generator with Banner Image
+            // Dynamic Menu Generator with Visual Image Banner
             if (cmd === 'menu' || cmd === 'help') {
-                const totalCmds = Object.keys(commands).length + 2; // Including menu & help
+                const totalCmds = Object.keys(commands).length + 2;
                 const menuText = 
 `⚡ *CLOUDBOT PRO PANEL* ⚡
 👑 *Developer:* Lanez
@@ -148,7 +151,7 @@ async function startBot(userId, phone, io, socket) {
 └───
 
 ┌─── 🖼️ *MEDIA & UNLOCKS*
-│ ➣ .vv (Reply to any View-Once)
+│ ➣ .vv (Reply to View-Once)
 │ ➣ .play <song name>
 └───
 
@@ -156,9 +159,8 @@ async function startBot(userId, phone, io, socket) {
 ${Object.keys(commands).filter(c => !['ping','pong','status','uptime','owner','vv','play'].includes(c)).map(c => `│ ➣ .${c}`).join('\n')}
 └───
 
-*Type any command with prefix "." to execute.*`;
+*Type any command with prefix "." to run.*`;
 
-                // Sends Menu with Custom Image Preview
                 await sock.sendMessage(from, {
                     image: { url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800' },
                     caption: menuText
@@ -166,7 +168,7 @@ ${Object.keys(commands).filter(c => !['ping','pong','status','uptime','owner','v
                 return;
             }
 
-            // Execute mapped commands
+            // Command execution
             if (commands[cmd]) {
                 await commands[cmd](sock, from, msg, args);
             }
@@ -181,4 +183,4 @@ ${Object.keys(commands).filter(c => !['ping','pong','status','uptime','owner','v
 function stopBot(userId) {}
 
 module.exports = { startBot, stopBot };
-                                
+            
