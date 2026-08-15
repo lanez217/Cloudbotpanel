@@ -9,7 +9,7 @@ async function startBot(userId, phone, io, socket) {
     const sock = makeWASocket({
         auth: state,
         printQRInTerminal: false,
-        browser: Browsers.ubuntu('Chrome'), // Prevents socket drops on Render
+        browser: Browsers.ubuntu('Chrome'),
         connectTimeoutMs: 60000,
         keepAliveIntervalMs: 10000
     });
@@ -56,9 +56,7 @@ async function startBot(userId, phone, io, socket) {
         }
     });
 
-    // --- COMPLETE 100+ COMMAND DICTIONARY ---
     const commands = {
-        // SYSTEM & UTILITY
         ping: async (s, f) => await s.sendMessage(f, { text: '🏓 *Pong!* Bot is active & fast.' }),
         pong: async (s, f) => await s.sendMessage(f, { text: '🏓 *Ping!*' }),
         status: async (s, f) => await s.sendMessage(f, { text: '🟢 *CloudBot Status:* Active & Connected' }),
@@ -68,7 +66,6 @@ async function startBot(userId, phone, io, socket) {
         date: async (s, f) => await s.sendMessage(f, { text: `📅 *Date:* ${new Date().toLocaleDateString()}` }),
         time: async (s, f) => await s.sendMessage(f, { text: `🕒 *Time:* ${new Date().toLocaleTimeString()}` }),
 
-        // MEDIA & VIEW ONCE
         vv: async (s, f, msg) => {
             const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
             const viewOnceMedia = quoted?.viewOnceMessageV2?.message || quoted?.viewOnceMessage?.message;
@@ -104,7 +101,6 @@ async function startBot(userId, phone, io, socket) {
             await s.sendMessage(f, { image: { url: video.thumbnail }, caption: caption });
         },
 
-        // GROUP MANAGEMENT
         groupinfo: async (s, f) => await s.sendMessage(f, { text: '👥 *Group Info:* Active WhatsApp Group Chat' }),
         tagall: async (s, f) => await s.sendMessage(f, { text: '📣 *Tagging all members...*' }),
         hidetag: async (s, f) => await s.sendMessage(f, { text: '📢 *Announcement sent to all members.*' }),
@@ -124,72 +120,47 @@ async function startBot(userId, phone, io, socket) {
         welcome: async (s, f) => await s.sendMessage(f, { text: '👋 *Welcome message settings toggled.*' }),
         goodbye: async (s, f) => await s.sendMessage(f, { text: '👋 *Goodbye message settings toggled.*' }),
 
-        // DOWNLOADERS
         song: async (s, f) => await s.sendMessage(f, { text: '🎵 *Downloading audio track...*' }),
         video: async (s, f) => await s.sendMessage(f, { text: '🎥 *Downloading video stream...*' }),
         ytmp3: async (s, f) => await s.sendMessage(f, { text: '🎧 *Converting YouTube to MP3...*' }),
         ytmp4: async (s, f) => await s.sendMessage(f, { text: '🎬 *Converting YouTube to MP4...*' }),
-        tiktok: async (s, f) => await s.sendMessage(f, { text: '📱 *Fetching TikTok media (No Watermark)...*' }),
+        tiktok: async (s, f) => await s.sendMessage(f, { text: '📱 *Fetching TikTok media...*' }),
         ig: async (s, f) => await s.sendMessage(f, { text: '📸 *Fetching Instagram Reel/Post...*' }),
         fb: async (s, f) => await s.sendMessage(f, { text: '📘 *Fetching Facebook Video...*' }),
         twitter: async (s, f) => await s.sendMessage(f, { text: '🐦 *Fetching Twitter/X Media...*' }),
-        mediafire: async (s, f) => await s.sendMessage(f, { text: '📦 *Fetching MediaFire file link...*' }),
-        gitclone: async (s, f) => await s.sendMessage(f, { text: '🐙 *Cloning GitHub repository...*' }),
 
-        // FUN & GAMES
         truth: async (s, f) => await s.sendMessage(f, { text: '❓ *Truth:* What is your biggest secret?' }),
-        dare: async (s, f) => await s.sendMessage(f, { text: '🔥 *Dare:* Voice record yourself singing a song!' }),
+        dare: async (s, f) => await s.sendMessage(f, { text: '🔥 *Dare:* Voice record yourself singing!' }),
         joke: async (s, f) => await s.sendMessage(f, { text: '😂 *Joke:* Why do programmers prefer dark mode? Because light attracts bugs!' }),
-        quote: async (s, f) => await s.sendMessage(f, { text: '💡 *Quote:* "Code is like humor. When you have to explain it, it’s bad."' }),
-        fact: async (s, f) => await s.sendMessage(f, { text: '🧠 *Fact:* Honey never spoils. 3,000-year-old honey is still edible.' }),
+        quote: async (s, f) => await s.sendMessage(f, { text: '💡 *Quote:* "Code is like humor. When you have to explain it, it is bad."' }),
+        fact: async (s, f) => await s.sendMessage(f, { text: '🧠 *Fact:* Honey never spoils.' }),
         roll: async (s, f) => await s.sendMessage(f, { text: `🎲 *Dice:* You rolled a ${Math.floor(Math.random() * 6) + 1}!` }),
         flip: async (s, f) => await s.sendMessage(f, { text: `🪙 *Coin:* It landed on ${Math.random() > 0.5 ? 'Heads' : 'Tails'}!` }),
-        8ball: async (s, f) => await s.sendMessage(f, { text: '🎱 *Magic 8-Ball:* Signs point to Yes.' }),
-        hack: async (s, f) => await s.sendMessage(f, { text: '💻 *Simulating hack...* 100% Complete! User pwned.' }),
+        '8ball': async (s, f) => await s.sendMessage(f, { text: '🎱 *Magic 8-Ball:* Signs point to Yes.' }),
+        hack: async (s, f) => await s.sendMessage(f, { text: '💻 *Simulating hack...* 100% Complete!' }),
         rate: async (s, f) => await s.sendMessage(f, { text: `⭐ *Rating:* ${Math.floor(Math.random() * 100)}/100` }),
-        ship: async (s, f) => await s.sendMessage(f, { text: `❤️ *Compatibility Match:* ${Math.floor(Math.random() * 100)}%` }),
-        roast: async (s, f) => await s.sendMessage(f, { text: '🔥 *Roast:* You’re the reason shampoo has instructions.' }),
-        meme: async (s, f) => await s.sendMessage(f, { text: '🖼️ *Fetching fresh meme...*' }),
+        roast: async (s, f) => await s.sendMessage(f, { text: '🔥 *Roast:* You are the reason shampoo has instructions.' }),
 
-        // TOOLS & CONVERTERS
         sticker: async (s, f) => await s.sendMessage(f, { text: '🖼️ *Reply to an image to turn it into a sticker!*' }),
         toimg: async (s, f) => await s.sendMessage(f, { text: '🖼️ *Converting sticker back to image...*' }),
-        tourl: async (s, f) => await s.sendMessage(f, { text: '🔗 *Uploading media and generating CDN link...*' }),
-        shortlink: async (s, f) => await s.sendMessage(f, { text: '✂️ *Shortening URL...*' }),
+        tourl: async (s, f) => await s.sendMessage(f, { text: '🔗 *Uploading media and generating link...*' }),
         calc: async (s, f) => await s.sendMessage(f, { text: '🧮 *Calculator:* 2 + 2 = 4' }),
         qr: async (s, f) => await s.sendMessage(f, { text: '📲 *Generating custom QR Code...*' }),
-        weather: async (s, f) => await s.sendMessage(f, { text: '🌤️ *Weather:* 28°C, Partly Cloudy' }),
-        translate: async (s, f) => await s.sendMessage(f, { text: '🌐 *Translated text:* Hello World' }),
 
-        // ANIME COMMANDS
         anime: async (s, f) => await s.sendMessage(f, { text: '⛩️ *Searching Anime Database...*' }),
-        manga: async (s, f) => await s.sendMessage(f, { text: '📚 *Searching Manga Database...*' }),
         waifu: async (s, f) => await s.sendMessage(f, { text: '🌸 *Fetching random Waifu image...*' }),
         neko: async (s, f) => await s.sendMessage(f, { text: '🐱 *Fetching random Neko image...*' }),
-        husbando: async (s, f) => await s.sendMessage(f, { text: '✨ *Fetching Husbando image...*' }),
 
-        // SECURITY & BOT ADMIN
         mode: async (s, f) => await s.sendMessage(f, { text: '⚙️ *Bot Mode:* Public Mode Active' }),
-        anticall: async (s, f) => await s.sendMessage(f, { text: '🛡️ *Anti-Call toggled.* Auto-rejects WhatsApp calls.' }),
-        antilink: async (s, f) => await s.sendMessage(f, { text: '🛡️ *Anti-Link toggled.* Auto-deletes WhatsApp group links.' }),
-        antidelete: async (s, f) => await s.sendMessage(f, { text: '🛡️ *Anti-Delete toggled.* Resends deleted messages.' }),
-        badwords: async (s, f) => await s.sendMessage(f, { text: '🛡️ *Bad-words filter active.*' }),
-        block: async (s, f) => await s.sendMessage(f, { text: '🚫 *User blocked from using bot.*' }),
-        unblock: async (s, f) => await s.sendMessage(f, { text: '✅ *User unblocked.*' }),
-        restart: async (s, f) => await s.sendMessage(f, { text: '🔄 *Restarting bot instance...*' }),
-        clearcache: async (s, f) => await s.sendMessage(f, { text: '🧹 *Temporary cache cleared.*' })
+        anticall: async (s, f) => await s.sendMessage(f, { text: '🛡️ *Anti-Call toggled.*' }),
+        antilink: async (s, f) => await s.sendMessage(f, { text: '🛡️ *Anti-Link toggled.*' }),
+        restart: async (s, f) => await s.sendMessage(f, { text: '🔄 *Restarting bot instance...*' })
     };
 
-    // Add extra numeric tools to ensure over 100 total commands registered
-    for (let i = 1; i <= 30; i++) {
-        commands[`tool${i}`] = async (s, f) => await s.sendMessage(f, { text: `⚙️ *CloudBot Tool #${i}:* Operational.` });
-    }
-
-    // MESSAGE LISTENER
     sock.ev.on('messages.upsert', async (m) => {
         try {
             const msg = m.messages[0];
-            if (!msg || !msg.message) return; // Responds in self-messages
+            if (!msg || !msg.message) return;
 
             const from = msg.key.remoteJid;
             const text = (
@@ -204,66 +175,25 @@ async function startBot(userId, phone, io, socket) {
             const args = text.slice(1).split(/ +/);
             const cmd = args.shift().toLowerCase();
 
-            // Dynamic Menu Generator with Visual Image Banner
             if (cmd === 'menu' || cmd === 'help') {
-                const totalCmds = Object.keys(commands).length + 2;
                 const menuText = 
 `⚡ *CLOUDBOT PRO PANEL* ⚡
 👑 *Developer:* Lanez
-📊 *Total Commands:* ${totalCmds}
 
-┌─── 🛠️ *SYSTEM COMMANDS*
-│ ➣ .ping | .pong | .status | .uptime
-│ ➣ .owner | .botinfo | .date | .time
-└───
+┌─── 🛠️ *COMMANDS*
+│ .ping | .pong | .status | .uptime | .owner
+│ .vv (Reply to View-Once)
+│ .play <song name>
+│ .groupinfo | .tagall | .hidetag | .kick | .add
+│ .song | .video | .tiktok | .ig | .fb
+│ .joke | .quote | .roll | .flip | .8ball
+│ .sticker | .toimg | .calc | .qr
+└───`;
 
-┌─── 🖼️ *MEDIA & UNLOCKS*
-│ ➣ .vv (Reply to View-Once)
-│ ➣ .play <song name>
-└───
-
-┌─── 👥 *GROUP MANAGEMENT*
-│ ➣ .groupinfo | .tagall | .hidetag | .kick | .add
-│ ➣ .promote | .demote | .linkgroup | .revoke
-│ ➣ .setname | .setdesc | .mute | .unmute | .admins
-│ ➣ .warn | .resetwarn | .welcome | .goodbye
-└───
-
-┌─── 📥 *DOWNLOADERS*
-│ ➣ .song | .video | .ytmp3 | .ytmp4 | .tiktok
-│ ➣ .ig | .fb | .twitter | .mediafire | .gitclone
-└───
-
-┌─── 🎲 *FUN & GAMES*
-│ ➣ .truth | .dare | .joke | .quote | .fact
-│ ➣ .roll | .flip | .8ball | .hack | .rate | .ship
-│ ➣ .roast | .meme
-└───
-
-┌─── 🧰 *TOOLS & CONVERTERS*
-│ ➣ .sticker | .toimg | .tourl | .shortlink
-│ ➣ .calc | .qr | .weather | .translate
-└───
-
-┌─── 🌸 *ANIME*
-│ ➣ .anime | .manga | .waifu | .neko | .husbando
-└───
-
-┌─── 🛡️ *SECURITY & ADMIN*
-│ ➣ .mode | .anticall | .antilink | .antidelete
-│ ➣ .badwords | .block | .unblock | .restart | .clearcache
-└───
-
-*Type any command with prefix "." to run.*`;
-
-                await sock.sendMessage(from, {
-                    image: { url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800' },
-                    caption: menuText
-                });
+                await sock.sendMessage(from, { text: menuText });
                 return;
             }
 
-            // Execute matching command
             if (commands[cmd]) {
                 await commands[cmd](sock, from, msg, args);
             }
@@ -278,3 +208,4 @@ async function startBot(userId, phone, io, socket) {
 function stopBot(userId) {}
 
 module.exports = { startBot, stopBot };
+                      
