@@ -17,13 +17,11 @@ async function startBot(userId, phone, io, socket) {
             socket.emit('qr', qr);
         }
 
-        // Generate real WhatsApp pairing code
+        // Generate official 8-character WhatsApp pairing code
         if (!sock.authState.creds.registered && phone) {
             try {
-                // Strip '+' or extra symbols (must be pure numbers: e.g. 233597789459)
                 const cleanPhone = phone.replace(/[^0-9]/g, '');
                 
-                // Slight delay to ensure socket readiness
                 setTimeout(async () => {
                     try {
                         const code = await sock.requestPairingCode(cleanPhone);
@@ -50,16 +48,23 @@ async function startBot(userId, phone, io, socket) {
         }
     });
 
+    // Handle messages & commands (Allows self-messages)
     sock.ev.on('messages.upsert', async (m) => {
         try {
             const msg = m.messages[0];
-            if (!msg.message || msg.key.fromMe) return;
+            if (!msg || !msg.message) return; // Removed msg.key.fromMe check
 
             const from = msg.key.remoteJid;
-            const text = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
+            const text = (msg.message.conversation || msg.message.extendedTextMessage?.text || '').trim().toLowerCase();
 
-            if (text.toLowerCase() === '.menu') {
-                await sock.sendMessage(from, { text: '⚡ *CLOUDBOT MENU*\n\n- .ping\n- .status\n- .help' });
+            if (text === '.menu' || text === '.help') {
+                await sock.sendMessage(from, { text: '⚡ *CLOUDBOT MENU*\n\n- .ping\n- .pong\n- .status\n- .help' });
+            } else if (text === '.ping') {
+                await sock.sendMessage(from, { text: '🏓 *Pong!* Bot is alive and active.' });
+            } else if (text === '.pong') {
+                await sock.sendMessage(from, { text: '🏓 *Ping!*' });
+            } else if (text === '.status') {
+                await sock.sendMessage(from, { text: '🟢 *CloudBot Status:* Online & Syncing' });
             }
         } catch (err) {
             console.error('Error processing message:', err);
@@ -70,7 +75,7 @@ async function startBot(userId, phone, io, socket) {
 }
 
 function stopBot(userId) {
-    // Clear instance if needed
+    // Instance cleanup logic if needed
 }
 
 module.exports = { startBot, stopBot };
