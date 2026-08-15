@@ -1,20 +1,19 @@
 {
   "name": "cloudbotpanel",
   "version": "1.0.0",
-  "description": "WhatsApp Baileys bot with Groq AI",
-  "main": "index.js",
+  "description": "WhatsApp Bot Panel powered by Baileys, Express, and Socket.io",
+  "main": "server.js",
   "scripts": {
-    "start": "node index.js"
-  },
-  "dependencies": {
-    "express": "^4.19.2",
-    "groq-sdk": "latest",
-    "axios": "^1.7.2",
-    "dotenv": "^16.4.5",
-    "socket.io": "latest",
-    "@whiskeysockets/baileys": "latest"
+    "start": "node server.js"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.10",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5",
+    "yt-search": "^2.12.1"
   }
 }
