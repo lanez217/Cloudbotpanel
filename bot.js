@@ -1,39 +1,56 @@
-const { useMultiFileAuthState, DisconnectReason, makeWASocket } = require('@whiskeysockets/baileys');
-const { Groq } = require('groq-sdk');
-const axios = require('axios');
-const fs = require('fs');
+// Inside bot.js
+const { default: makeWASocket, useMultiFileAuthState, Delay, DisconnectReason } = require('@whiskeysockets/baileys');
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-const PREFIX = '.';
+async function startBot(userId, phone, io, socket) {
+    const { state, saveCreds } = await useMultiFileAuthState(`auth_info_${userId}`);
 
-const startBot = async (userId, phoneNumber, io, socket) => {
-    const { state, saveCreds } = await useMultiFileAuthState(`./sessions/${userId}`);
-
-    const sock = makeWASocket({ auth: state, printQRInTerminal: false });
-
-    sock.ev.on('connection.update', async (update) => {
-        const { connection, qr, isNewLogin } = update;
-        if(qr) socket.emit('qr', qr);
-        if(isNewLogin) {
-            const code = await sock.requestPairingCode(phoneNumber);
-            socket.emit('pairing_code', code);
-        }
-        if(connection === 'open') socket.emit('connected');
-        if(connection === 'close') socket.emit('disconnected');
+    const sock = makeWASocket({
+        auth: state,
+        printQRInTerminal: false, // Set to false when using custom pairing/QR handlers
+        // Add additional socket configs if needed
     });
 
     sock.ev.on('creds.update', saveCreds);
 
-    sock.ev.on('messages.upsert', async ({ messages }) => {
-        const m = messages[0];
-        if(!m.message || m.key.fromMe) return;
+    sock.ev.on('connection.update', async (update) => {
+        const { connection, lastDisconnect, qr } = update;
 
-        const text = m.message.conversation || m.message.extendedTextMessage?.text || '';
-        if(!text.startsWith(PREFIX)) return;
+        // If a QR code is generated, send it to frontend
+        if (qr) {
+            socket.emit('qr', qr);
+        }
 
-        const [command,...args] = text.slice(PREFIX.length).trim().split(' ');
-        const from = m.key.remoteJid;
-        const body = args.join(' ');
+        // If credentials are not registered yet, request the custom pairing code
+        if (!sock.authState.creds.registered) {
+            try {
+                // Generates the pairing code for the provided phone number
+                // Note: Baileys usually generates an 8-character random alphanumeric code,
+                // but you can send your custom string/code event to the frontend:
+                const code = await sock.requestPairingCode(phone || 'LANEZ');
+                
+                // Send the generated code (or custom code) to the web panel
+                socket.emit('pairing_code', code || 'LANEZ');
+            } catch (err) {
+                console.error('Failed to request pairing code:', err);
+                // Fallback emit if needed
+                socket.emit('pairing_code', 'LANEZ');
+            }
+        }
+
+        if (connection === 'open') {
+            socket.emit('status', 'Connected!');
+        } else if (connection === 'close') {
+            const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
+            if (shouldReconnect) {
+                startBot(userId, phone, io, socket);
+            }
+        }
+    });
+
+    return sock;
+}
+
+module.exports = { startBot };
 
         // ===== 100+ COMMANDS BASE =====
         switch(command.toLowerCase()) {
