@@ -9,18 +9,15 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Serve static files directly from project root
 app.use(express.static(__dirname));
 app.use(express.json());
 
 let activeBots = new Map();
 
-// Serve dashboard HTML
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Live Stats API for dashboard ping & user counts
 app.get('/api/stats', (req, res) => {
     res.json({
         botsOnline: activeBots.size,
@@ -29,7 +26,6 @@ app.get('/api/stats', (req, res) => {
     });
 });
 
-// Real-time WebSockets setup
 io.on('connection', (socket) => {
     console.log('User connected to panel');
 
@@ -57,7 +53,8 @@ io.on('connection', (socket) => {
     });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.process?.env?.PORT || process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`⚡ CloudBot Panel running on port ${PORT}`);
 });
+            
