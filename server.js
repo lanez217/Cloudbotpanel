@@ -1,53 +1,31 @@
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers } = require('@whiskeysockets/baileys')
-const express = require('express')
-const app = express()
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const path = require('path');
+const { startBot, requestPairingCodeExplicit } = require('./bot');
 
-const PORT = process.env.PORT || 3000
-const BOT_NAME = 'LANEZ'
-const PHONE_NUMBER = '233XXXXXXXXX' // <-- CHANGE THIS to your WhatsApp number. Example: '233557891234'
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
 
-async function connectToWhatsApp() {
-    const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys')
+app.use(express.static(path.join(__dirname, 'public')));
 
-    const sock = makeWASocket({
-        auth: state,
-        printQRInTerminal: false,
-        browser: [BOT_NAME, 'Chrome', '20.0.0'] // This makes it show as LANEZ
-    })
-
-    sock.ev.on('creds.update', saveCreds)
-
-    // 4. Request pairing code with 10s delay for Render
-    if (!sock.authState.creds.registered && PHONE_NUMBER) {
-        setTimeout(async () => {
-            try {
-                const code = await sock.requestPairingCode(PHONE_NUMBER)
-                console.log(`\n🔥 ${BOT_NAME} Pairing Code: ${code.match(/.{1,3}/g).join('-')}\n`)
-            } catch (error) {
-                console.error("Pairing Code Error:", error)
-                console.log("Retrying in 15 seconds...")
-                setTimeout(() => connectToWhatsApp(), 15000) // auto retry
+io.on('connection', (socket) => {
+    socket.on('start_bot', async (data) => {
+        const { userId, phone } = data;
+        try {
+            await startBot(userId, phone, io, socket);
+            
+            if (phone) {
+                const code = await requestPairingCodeExplicit(userId, phone);
+                socket.emit('pairing_code', code);
             }
-        }, 10000) // 10 second delay for Render
-    }
-
-    sock.ev.on('connection.update', (update) => {
-        const { connection, lastDisconnect } = update
-        if (connection === 'close') {
-            const shouldReconnect = lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut
-            console.log('Connection closed. Reconnecting...', shouldReconnect)
-            if(shouldReconnect) connectToWhatsApp()
-        } else if (connection === 'open') {
-            console.log(`✅ ${BOT_NAME} connection successfully opened!`)
+        } catch (err) {
+            console.error('Error in start_bot:', err);
+            socket.emit('status', 'Failed to generate pairing code. Retrying...');
         }
-    })
-}
+    });
+});
 
-// Keep Render alive
-app.get('/', (req, res) => res.send(`${BOT_NAME} Bot is Live`))
-app.listen(PORT, () => console.log(`${BOT_NAME} running on port ${PORT}`))
-
-connectToWhatsApp()
-
-// Ping every 30s so Render doesn't sleep during pairing
-setInterval(() => console.log(`${BOT_NAME} is alive`), 30000)
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
