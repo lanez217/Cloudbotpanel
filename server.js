@@ -3,39 +3,60 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
-const { startBot, requestPairingCodeExplicit } = require('./bot');
+const { startBot, stopBot } = require('./bot');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Serve static assets from the root project folder
 app.use(express.static(__dirname));
 app.use(express.json());
 
-// Explicitly send index.html when visiting the main URL
+let activeBots = new Map();
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get('/api/stats', (req, res) => {
+    res.json({
+        botsOnline: activeBots.size,
+        totalUsers: activeBots.size,
+        uptime: process.uptime()
+    });
 });
 
 io.on('connection', (socket) => {
     console.log('User connected to panel');
 
-    socket.on('start_bot', async (data) => {
-        const { userId, phone } = data;
+    // Listens specifically for connect_bot coming from index.html
+    socket.on('connect_bot', async ({ userId, phone }) => {
+        if (activeBots.has(userId)) {
+            return socket.emit('status', 'Bot instance already running');
+        }
+
+        socket.emit('status', 'Initializing WhatsApp connection...');
         try {
-            await startBot(userId, phone, io, socket);
-            
-            if (phone) {
-                const code = await requestPairingCodeExplicit(userId, phone);
-                socket.emit('pairing_code', code);
-            }
+            const sock = await startBot(userId, phone, io, socket);
+            activeBots.set(userId, sock);
         } catch (err) {
-            console.error('Error in start_bot:', err);
-            socket.emit('status', 'Failed to generate pairing code. Retrying...');
+            console.error('Error starting bot:', err);
+            socket.emit('status', 'Failed to start bot instance.');
+        }
+    });
+
+    socket.on('disconnect_bot', ({ userId }) => {
+        if (activeBots.has(userId)) {
+            stopBot(userId);
+            activeBots.delete(userId);
+            socket.emit('disconnected');
+            socket.emit('status', 'Bot instance stopped.');
         }
     });
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`⚡ CloudBot Panel running on port ${PORT}`));
+server.listen(PORT, () => {
+    console.log(`⚡ CloudBot Panel running on port ${PORT}`);
+});
+                     
