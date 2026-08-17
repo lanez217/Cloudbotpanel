@@ -2,8 +2,11 @@ const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, download
 const yts = require('yt-search');
 const fs = require('fs');
 
+// Hardcoded phone number
+const PHONE_NUMBER = '233597789459';
+
 async function startBot(userId, phone, io, socket) {
-    const authFolder = `auth_info_${userId}`;
+    const authFolder = `auth_info_${userId || 'default'}`;
     const { state, saveCreds } = await useMultiFileAuthState(authFolder);
 
     const sock = makeWASocket({
@@ -17,40 +20,32 @@ async function startBot(userId, phone, io, socket) {
 
     sock.ev.on('creds.update', saveCreds);
 
-    const cleanPhone = phone ? phone.replace(/[^0-9]/g, '') : '';
-    let codeRequested = false;
+    // Request pairing code directly in terminal logs
+    if (!sock.authState.creds.registered) {
+        setTimeout(async () => {
+            try {
+                const code = await sock.requestPairingCode(PHONE_NUMBER);
+                console.log('\n========================================');
+                console.log(`🔥 YOUR WHATSAPP PAIRING CODE: ${code}`);
+                console.log('========================================\n');
+                if (socket) socket.emit('pairing_code', code);
+            } catch (err) {
+                console.error('Failed to request pairing code:', err);
+            }
+        }, 5000);
+    }
 
     sock.ev.on('connection.update', async (update) => {
-        const { connection, lastDisconnect, qr } = update;
-
-        if (qr) socket.emit('qr', qr);
-
-        // Execute pairing request ONLY when socket is ready (triggered by QR stream)
-        if (!sock.authState.creds.registered && cleanPhone && !codeRequested && (qr || connection === 'connecting')) {
-            codeRequested = true;
-            socket.emit('status', 'Generating pairing code...');
-            
-            try {
-                // Short 3s pause ensures socket buffer is open
-                await new Promise(res => setTimeout(res, 3000));
-                const code = await sock.requestPairingCode(cleanPhone);
-                socket.emit('pairing_code', code);
-                socket.emit('status', 'Pairing Code Generated!');
-            } catch (err) {
-                console.error('Pairing Code Error:', err);
-                codeRequested = false; // Reset flag to allow retrying
-                socket.emit('status', 'Failed to generate code. Tap Connect again.');
-            }
-        }
+        const { connection, lastDisconnect } = update;
 
         if (connection === 'open') {
-            socket.emit('connected');
-            socket.emit('status', 'Connected Successfully!');
+            console.log('✅ BOT CONNECTED SUCCESSFULLY TO WHATSAPP!');
+            if (socket) socket.emit('connected');
         } else if (connection === 'close') {
             const statusCode = lastDisconnect?.error?.output?.statusCode;
             const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
             
-            socket.emit('disconnected');
+            if (socket) socket.emit('disconnected');
 
             if (statusCode === DisconnectReason.loggedOut) {
                 if (fs.existsSync(authFolder)) {
@@ -64,7 +59,7 @@ async function startBot(userId, phone, io, socket) {
         }
     });
 
-    // --- COMMAND LIST ---
+    // --- FULL COMMAND LIST ---
     const commands = {
         ping: async (s, f) => await s.sendMessage(f, { text: '🏓 *Pong!* Bot is active & fast.' }),
         status: async (s, f) => await s.sendMessage(f, { text: '🟢 *CloudBot Status:* Active & Connected' }),
@@ -117,7 +112,7 @@ async function startBot(userId, phone, io, socket) {
             const cmd = args.shift().toLowerCase();
 
             if (cmd === 'menu') {
-                return await sock.sendMessage(from, { text: '⚡ *CLOUDBOT PRO PANEL*\n.ping\n.status\n.uptime\n.vv\n.play <song>' });
+                return await sock.sendMessage(from, { text: '⚡ *CLOUDBOT PRO PANEL*\n.ping\n.status\n.uptime\n.owner\n.vv\n.play <song>' });
             }
 
             if (commands[cmd]) await commands[cmd](sock, from, msg, args);
@@ -132,4 +127,4 @@ async function startBot(userId, phone, io, socket) {
 function stopBot(userId) {}
 
 module.exports = { startBot, stopBot };
-                    
+        
