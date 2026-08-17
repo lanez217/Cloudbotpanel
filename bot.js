@@ -2,7 +2,6 @@ const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, download
 const yts = require('yt-search');
 const fs = require('fs');
 
-// Hardcoded phone number
 const PHONE_NUMBER = '233597789459';
 
 async function startBot(userId, phone, io, socket) {
@@ -20,32 +19,37 @@ async function startBot(userId, phone, io, socket) {
 
     sock.ev.on('creds.update', saveCreds);
 
-    // Request pairing code directly in terminal logs
-    if (!sock.authState.creds.registered) {
-        setTimeout(async () => {
-            try {
-                const code = await sock.requestPairingCode(PHONE_NUMBER);
-                console.log('\n========================================');
-                console.log(`🔥 YOUR WHATSAPP PAIRING CODE: ${code}`);
-                console.log('========================================\n');
-                if (socket) socket.emit('pairing_code', code);
-            } catch (err) {
-                console.error('Failed to request pairing code:', err);
-            }
-        }, 5000);
-    }
+    let codeRequested = false;
 
     sock.ev.on('connection.update', async (update) => {
-        const { connection, lastDisconnect } = update;
+        const { connection, lastDisconnect, qr } = update;
+
+        // Triggers pairing code as soon as WhatsApp stream is active
+        if (!sock.authState.creds.registered && !codeRequested && (qr || connection === 'connecting')) {
+            codeRequested = true;
+            console.log('\n========================================');
+            console.log('⏳ REQUESTING WHATSAPP PAIRING CODE...');
+            console.log('========================================\n');
+
+            try {
+                await new Promise(res => setTimeout(res, 3000));
+                const code = await sock.requestPairingCode(PHONE_NUMBER);
+                
+                console.log('\n========================================');
+                console.log(`🔥 YOUR PAIRING CODE IS: ${code}`);
+                console.log('========================================\n');
+
+            } catch (err) {
+                console.error('❌ Error requesting code:', err.message);
+                codeRequested = false; // Reset to retry on next connection cycle
+            }
+        }
 
         if (connection === 'open') {
             console.log('✅ BOT CONNECTED SUCCESSFULLY TO WHATSAPP!');
-            if (socket) socket.emit('connected');
         } else if (connection === 'close') {
             const statusCode = lastDisconnect?.error?.output?.statusCode;
             const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
-            
-            if (socket) socket.emit('disconnected');
 
             if (statusCode === DisconnectReason.loggedOut) {
                 if (fs.existsSync(authFolder)) {
@@ -59,7 +63,7 @@ async function startBot(userId, phone, io, socket) {
         }
     });
 
-    // --- FULL COMMAND LIST ---
+    // --- COMMAND LIST ---
     const commands = {
         ping: async (s, f) => await s.sendMessage(f, { text: '🏓 *Pong!* Bot is active & fast.' }),
         status: async (s, f) => await s.sendMessage(f, { text: '🟢 *CloudBot Status:* Active & Connected' }),
@@ -127,4 +131,4 @@ async function startBot(userId, phone, io, socket) {
 function stopBot(userId) {}
 
 module.exports = { startBot, stopBot };
-        
+                        
