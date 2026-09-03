@@ -1,62 +1,137 @@
-require('dotenv').config();
 const express = require('express');
 const http = require('http');
-const { Server } = require('socket.io');
 const path = require('path');
-const { startBot, stopBot } = require('./bot');
+const fs = require('fs');
+const axios = require('axios');
+const { startBot } = require('./bot');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
 
-app.use(express.static(__dirname));
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
-let activeBots = new Map();
+let activePairingCode = null;
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+// Persistent Visitor Count
+const VISITORS_FILE = path.join(__dirname, 'visitors.json');
+
+function getVisitorCount() {
+    try {
+        if (fs.existsSync(VISITORS_FILE)) {
+            const data = fs.readFileSync(VISITORS_FILE, 'utf8');
+            return JSON.parse(data).count || 0;
+        }
+    } catch (e) {
+        console.error('Error reading visitor count:', e.message);
+    }
+    return 0;
+}
+
+function saveVisitorCount(count) {
+    try {
+        fs.writeFileSync(VISITORS_FILE, JSON.stringify({ count }), 'utf8');
+    } catch (e) {
+        console.error('Error saving visitor count:', e.message);
+    }
+}
+
+let totalVisitors = getVisitorCount();
+
+// Record Page Visit (Triggers ONCE on frontend load)
+app.get('/api/visit', (req, res) => {
+    totalVisitors++;
+    saveVisitorCount(totalVisitors);
+    res.json({ visitors: totalVisitors });
 });
 
+// Stats API
 app.get('/api/stats', (req, res) => {
+    const totalSeconds = Math.floor(process.uptime());
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const uptimeStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+
     res.json({
-        botsOnline: activeBots.size,
-        totalUsers: activeBots.size,
-        uptime: process.uptime()
+        servers: '1 Live',
+        uptime: uptimeStr,
+        speed: (Math.random() * 0.4 + 0.5).toFixed(2) + 's',
+        visitors: totalVisitors
     });
 });
 
-io.on('connection', (socket) => {
-    console.log('User connected to panel');
+// Paystack Verification Endpoint (Secures paid downloads)
+app.post('/api/verify-paystack', async (req, res) => {
+    const { reference } = req.body;
+    const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || "sk_test_YOUR_SECRET_KEY_HERE";
 
-    // Listens specifically for connect_bot coming from index.html
-    socket.on('connect_bot', async ({ userId, phone }) => {
-        if (activeBots.has(userId)) {
-            return socket.emit('status', 'Bot instance already running');
+    if (!reference) return res.status(400).json({ success: false, message: 'Reference missing' });
+
+    try {
+        const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
+            headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` }
+        });
+
+        if (response.data.data.status === 'success') {
+            return res.json({ success: true, credits: 10 });
+        } else {
+            return res.status(400).json({ success: false, message: 'Transaction unverified' });
         }
+    } catch (err) {
+        console.error('Paystack verification error:', err.message);
+        return res.status(500).json({ success: false, message: 'Verification failed' });
+    }
+});
 
-        socket.emit('status', 'Initializing WhatsApp connection...');
+// WhatsApp Bot Pairing Endpoint
+app.post('/pair', async (req, res) => {
+    const { number } = req.body;
+    if (!number) return res.status(400).json({ error: 'Phone number is required.' });
+
+    console.log(`📱 Pairing request received for: ${number}`);
+
+    const sessionPath = path.join(__dirname, 'auth_info_lanez');
+    if (fs.existsSync(sessionPath)) {
         try {
-            const sock = await startBot(userId, phone, io, socket);
-            activeBots.set(userId, sock);
+            fs.rmSync(sessionPath, { recursive: true, force: true });
+            console.log('🧹 Session cleared for new pair connection.');
         } catch (err) {
-            console.error('Error starting bot:', err);
-            socket.emit('status', 'Failed to start bot instance.');
+            console.error('Session clearance error:', err.message);
         }
+    }
+
+    activePairingCode = null;
+
+    startBot(number, (code) => {
+        activePairingCode = code;
     });
 
-    socket.on('disconnect_bot', ({ userId }) => {
-        if (activeBots.has(userId)) {
-            stopBot(userId);
-            activeBots.delete(userId);
-            socket.emit('disconnected');
-            socket.emit('status', 'Bot instance stopped.');
-        }
-    });
+    let attempts = 0;
+    while (!activePairingCode && attempts < 20) {
+        await new Promise((r) => setTimeout(r, 500));
+        attempts++;
+    }
+
+    if (activePairingCode) {
+        return res.json({ code: activePairingCode });
+    } else {
+        return res.status(500).json({ error: 'Pairing timed out. Please try again.' });
+    }
 });
+
+startBot();
+
+// Keep-Alive Ping
+const RENDER_URL = process.env.RENDER_EXTERNAL_URL;
+if (RENDER_URL) {
+    setInterval(async () => {
+        try { await axios.get(RENDER_URL); } catch (e) {}
+    }, 4 * 60 * 1000);
+}
+
+process.on('uncaughtException', (err) => console.error('Uncaught Exception:', err.message));
+process.on('unhandledRejection', (reason) => console.error('Unhandled Rejection:', reason));
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`⚡ CloudBot Panel running on port ${PORT}`);
-});
-                     
+server.listen(PORT, () => console.log(`🚀 Lanez Pure OS running on port ${PORT}`));
+    
