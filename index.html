@@ -1,333 +1,346 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>⚡ CloudBot Panel Pro</title>
-<script src="/socket.io/socket.io.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lanez Pure™ OS</title>
+
+<!-- Open Graph Meta Tags for WhatsApp/Social Shares -->
+<meta property="og:title" content="Lanez Pure™ OS — All Tools in One OS">
+<meta property="og:description" content="HD Video Downloader, WhatsApp Bot Pairing, and View Once Unlocker.">
+<meta property="og:type" content="website">
+
+<script src="https://js.paystack.co/v1/inline.js"></script>
 <style>
-    :root {
-        --bg-gradient: radial-gradient(circle at top left, #1e1b4b 0%, #0f172a 40%, #020617 100%);
-        --glass-bg: rgba(255, 255, 255, 0.03);
-        --glass-border: rgba(255, 255, 255, 0.08);
-        --accent-glow: #6366f1;
-        --accent-cyan: #38bdf8;
-        --accent-gold: #f59e0b;
-        --text-primary: #f8fafc;
-        --text-secondary: #94a3b8;
-    }
-
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-
-    body {
-        background: var(--bg-gradient);
-        color: var(--text-primary);
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-        overflow-x: hidden;
-    }
-
-    .glow-orb {
-        position: fixed;
-        width: 300px;
-        height: 300px;
-        background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(0,0,0,0) 70%);
-        top: 20%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        pointer-events: none;
-        z-index: 0;
-        animation: pulseOrb 6s ease-in-out infinite alternate;
-    }
-
-    @keyframes pulseOrb {
-        0% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.5; }
-        100% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.9; }
-    }
-
-    .container {
-        width: 100%;
-        max-width: 480px;
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-        position: relative;
-        z-index: 1;
-        animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .header { text-align: center; }
-    .header h1 {
-        font-size: 28px;
-        font-weight: 800;
-        background: linear-gradient(90deg, #818cf8, #c084fc, #38bdf8);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        letter-spacing: -0.5px;
-        text-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
-    }
-    .header p { color: var(--text-secondary); font-size: 13px; margin-top: 4px; font-weight: 500; }
-
-    .card {
-        background: var(--glass-bg);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid var(--glass-border);
-        border-radius: 24px;
-        padding: 24px;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
-        transition: transform 0.3s ease, border-color 0.3s ease;
-    }
-    .card:hover { border-color: rgba(99, 102, 241, 0.25); }
-
-    .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-    .stat-box {
-        background: rgba(0, 0, 0, 0.2);
-        border: 1px solid rgba(255, 255, 255, 0.04);
-        border-radius: 16px;
-        padding: 14px 10px;
-        text-align: center;
-        transition: all 0.3s ease;
-    }
-    .stat-box:hover { background: rgba(255, 255, 255, 0.03); transform: translateY(-2px); }
-    .stat-box h2 {
-        font-size: 24px;
-        font-weight: 800;
-        color: var(--accent-cyan);
-        font-family: 'JetBrains Mono', monospace;
-    }
-    .stat-box p { color: var(--text-secondary); font-size: 11px; font-weight: 600; text-transform: uppercase; margin-top: 4px; }
-
-    .input-group { margin-bottom: 16px; }
-    .input-group label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-    
-    input {
-        width: 100%;
-        padding: 14px 16px;
-        border-radius: 14px;
-        border: 1px solid var(--glass-border);
-        background: rgba(0, 0, 0, 0.3);
-        color: var(--text-primary);
-        font-size: 15px;
-        font-family: 'JetBrains Mono', monospace;
-        outline: none;
-        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    input:focus { border-color: var(--accent-glow); box-shadow: 0 0 20px rgba(99, 102, 241, 0.25); }
-
-    .btn {
-        width: 100%;
-        padding: 14px;
-        border: none;
-        border-radius: 14px;
-        font-weight: 700;
-        font-size: 14px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-    .btn-primary { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: #fff; box-shadow: 0 4px 20px rgba(99, 102, 241, 0.35); }
-    .btn-primary:active { transform: scale(0.98); }
-    
-    .btn-danger { background: rgba(239, 68, 68, 0.1); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.2); margin-top: 12px; }
-    .btn-danger:hover { background: rgba(239, 68, 68, 0.2); }
-
-    .status-badge {
-        font-size: 13px;
-        padding: 10px 14px;
-        border-radius: 12px;
-        text-align: center;
-        margin: 14px 0;
-        display: none;
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid var(--glass-border);
-        font-weight: 500;
-        animation: fadeIn 0.4s ease;
-    }
-
-    .code-container {
-        display: none;
-        text-align: center;
-        margin: 20px 0;
-        padding: 20px;
-        background: rgba(99, 102, 241, 0.08);
-        border: 1px dashed var(--accent-glow);
-        border-radius: 18px;
-        animation: zoomIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .code-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
-    .code-value {
-        font-size: 30px;
-        font-weight: 800;
-        letter-spacing: 6px;
-        color: var(--accent-gold);
-        margin: 10px 0;
-        font-family: 'JetBrains Mono', monospace;
-        text-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
-    }
-    .copy-btn {
-        background: rgba(255, 255, 255, 0.08);
-        border: 1px solid var(--glass-border);
-        color: var(--text-primary);
-        padding: 8px 16px;
-        border-radius: 10px;
-        font-size: 12px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-    .copy-btn:hover { background: rgba(255, 255, 255, 0.15); }
-
-    .steps { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
-    .steps li { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text-secondary); }
-    .step-num {
-        width: 24px;
-        height: 24px;
-        background: rgba(255, 255, 255, 0.08);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 11px;
-        font-weight: 700;
-        color: var(--accent-cyan);
-    }
-
-    .footer { text-align: center; margin-top: 10px; font-size: 12px; color: var(--text-secondary); }
-    .footer a { color: var(--accent-cyan); text-decoration: none; font-weight: 700; letter-spacing: 0.5px; }
-
-    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes zoomIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;700;900&display=swap');
+*{font-family:'Inter',sans-serif;box-sizing:border-box}
+body{background:#070709;color:#fff;margin:0;min-height:100vh}
+.header{padding:28px 20px;display:flex;justify-content:space-between;align-items:center;max-width:900px;margin:0 auto}
+.logo{font-size:26px;font-weight:900} .logo span{color:gold}
+.badge{background:#1a1a1e;border:1px solid #222;padding:8px 14px;border-radius:99px;font-size:11px}
+.hero{max-width:900px;margin:0 auto;padding:20px;text-align:center}
+.hero h1{font-size:48px;line-height:.9;margin:10px 0;font-weight:900;letter-spacing:-2px}
+.hero p{color:#888;font-size:16px}
+.grid{max-width:900px;margin:30px auto;display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:0 20px}
+.app{background:#121214;border:1px solid #222;border-radius:24px;padding:24px;text-align:left;cursor:pointer;transition:.2s}
+.app:hover{border-color:gold;transform:translateY(-2px)}
+.app .icon{font-size:36px;margin-bottom:12px}
+.app h3{margin:0;font-size:18px} .app p{margin:6px 0 0;color:#777;font-size:12px}
+.full{max-width:900px;margin:20px auto;padding:0 20px;display:none}
+.full.show{display:block}
+.box{background:#121214;border:1px solid #222;border-radius:28px;padding:30px}
+label{font-size:11px;color:#666;letter-spacing:1px;display:block;text-align:left;margin:10px 0 8px}
+input{width:100%;background:#1e1e22;border:2px solid #2a2a30;padding:22px;border-radius:20px;color:#fff;font-size:18px;outline:none}
+input:focus{border-color:gold}
+.btn{width:100%;border:none;padding:20px;border-radius:20px;font-weight:900;font-size:16px;margin-top:12px;cursor:pointer;transition:.2s}
+.btn:active{transform:scale(.98)}
+.btn-clean{background:#fff;color:#000}
+.btn-wm{background:#1e1e22;color:#fff;border:2px solid #333}
+.preview{background:#000;border-radius:20px;overflow:hidden;margin-top:18px;display:none;position:relative}
+.preview video{width:100%;max-height:450px;border-radius:16px}
+.code{margin-top:18px;background:#000;border:2px dashed gold;color:gold;padding:22px;border-radius:20px;font-size:28px;letter-spacing:6px;font-weight:900;display:none;text-align:center;cursor:pointer}
+#pay{max-width:900px;margin:20px auto;padding:0 20px;display:none}
+.payinner{background:gold;color:#000;padding:22px;border-radius:22px;text-align:center}
+.back{color:#888;font-size:14px;cursor:pointer;margin-bottom:14px;display:inline-block}
+.info{margin-top:16px;background:#0e0e10;border:1px solid #1a1a1a;padding:18px;border-radius:18px;text-align:left}
+.info h4{margin:0 0 8px;font-size:14px;color:gold} .info p{margin:0;color:#888;font-size:12px;line-height:1.6}
+.hidden{display:none !important}
+.cmd{background:#000;border:1px solid #222;padding:14px;border-radius:12px;color:gold;text-align:center;font-weight:900;margin:10px 0;font-size:20px}
+.tag{position:absolute;top:10px;left:10px;background:rgba(0,0,0,.7);padding:6px 10px;border-radius:8px;font-size:10px;font-weight:800}
+.stat{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:16px}
+.stat div{background:#000;border:1px solid #222;padding:14px;border-radius:16px;text-align:center}
+.stat b{color:gold;display:block;font-size:18px} .stat span{font-size:11px;color:#888}
 </style>
 </head>
 <body>
 
-<div class="glow-orb"></div>
+<div class="header">
+  <div class="logo">Lanez <span>Pure™</span> OS</div>
+  <div class="badge">● LIVE • <span id="left">1 FREE CLEAN</span></div>
+</div>
 
-<div class="container">
-    <div class="header">
-        <h1>⚡ CLOUDBOT PANEL</h1>
-        <p>Next-Gen WhatsApp Instance Manager</p>
+<div id="mainSection">
+  <div class="hero">
+    <h1>All Tools.<br>One <span style="color:gold">Pure™</span> OS.</h1>
+    <p>Trusted by creators. HD exports, Bot pairing & Unlocking.</p>
+  </div>
+  <div class="grid">
+    <div class="app" onclick="openApp('dl')"><div class="icon">🎬</div><h3>Pure Downloader</h3><p>TT, IG, FB, X<br>WITH / WITHOUT WM</p></div>
+    <div class="app" onclick="openApp('pair')"><div class="icon">🔗</div><h3>Bot Pair</h3><p>Speed • Uptime<br>Instant Code</p></div>
+    <div class="app" onclick="openApp('view')"><div class="icon">👁️</div><h3>View Once</h3><p>Reply .ok BEFORE open</p></div>
+    <div class="app" onclick="shareOS()"><div class="icon">🔗</div><h3>Share OS</h3><p>Invite Friends<br>Spread the word</p></div>
+  </div>
+</div>
+
+<!-- DOWNLOADER -->
+<div class="full" id="app-dl">
+  <div class="box">
+    <span class="back" onclick="goHome()">← Back to Main OS</span>
+    <label>PURE DOWNLOADER / CHOOSE TYPE</label>
+    <h2 style="text-align:left;margin:8px 0 0">Pure Downloader 🎬</h2>
+    <input id="url" placeholder="Paste TikTok / IG / FB / X link" style="margin-top:12px">
+    <button class="btn btn-clean" id="dlCleanBtn" onclick="doDL('clean')">✨ WITHOUT Watermark</button>
+    <button class="btn btn-wm" id="dlWmBtn" onclick="doDL('wm')">💧 WITH Watermark (Free Always)</button>
+    
+    <div id="prev" class="preview">
+      <video id="v" controls></video>
+      <div id="wmTag" class="tag" style="display:none"></div>
+      <a id="dlBtn" href="#" target="_blank" style="display:none;background:#fff;color:#000;padding:16px;text-align:center;font-weight:900;text-decoration:none;border-radius:12px;margin:12px;display:block">⬇️ Download Video</a>
     </div>
 
-    <div class="card">
-        <div class="stats">
-            <div class="stat-box"><h2 id="bots">0</h2><p>Active</p></div>
-            <div class="stat-box"><h2 id="users">0</h2><p>Users</p></div>
-            <div class="stat-box"><h2 id="ping">--</h2><p>Ping</p></div>
-        </div>
+    <div class="info">
+      <h4>ℹ️ Pricing Info</h4>
+      <p><b style="color:gold">WITHOUT:</b> 1st FREE, after GHS 5 for 10 exports<br><b style="color:#fff">WITH:</b> Always FREE unlimited, HD quality.</p>
+    </div>
+  </div>
+</div>
+
+<!-- PAIR -->
+<div class="full" id="app-pair">
+  <div class="box">
+    <span class="back" onclick="goHome()">← Back to Main OS</span>
+    <label>BOT PAIRING / LANEZ XMD</label>
+    <h2 style="text-align:left;margin:8px 0 0">Lanez XMD Bot Pair 🔗</h2>
+    <p style="text-align:left;color:#888;font-size:13px;margin:6px 0 0">Fast pairing, high uptime WhatsApp bot.</p>
+
+    <div class="stat">
+      <div><b id="speed">⚡ 0.8s</b><span>Bot Speed</span></div>
+      <div><b id="uptime">99.9%</b><span>Uptime</span></div>
+      <div><b id="visitors">--</b><span>Views</span></div>
     </div>
 
-    <div class="card">
-        <div class="input-group">
-            <label for="phone">WhatsApp Phone Number</label>
-            <input type="tel" id="phone" placeholder="233597789459">
-        </div>
+    <input id="num" placeholder="2335XXXXXXXX" type="number" style="margin-top:18px">
+    <button class="btn btn-clean" id="pairBtn" onclick="doPair()">Generate Pair Code</button>
+    <div id="code" class="code" onclick="copyCode()"></div>
 
-        <button class="btn btn-primary" onclick="connectBot()">Connect Instance</button>
+    <div class="info">
+      <h4>ℹ️ How to Pair</h4>
+      <p>1. Enter phone number with country code (e.g. 233...)<br>2. Tap Generate Pair Code<br>3. Copy code<br>4. Open WhatsApp > Linked Devices > Link with phone number > Paste code<br>• Code expires in 60 seconds.</p>
+    </div>
+  </div>
+</div>
 
-        <div id="status" class="status-badge"></div>
-
-        <div id="qr" class="qr-container"></div>
-        
-        <div id="code" class="code-container">
-            <div class="code-label">WhatsApp Pairing Code</div>
-            <div id="code-val" class="code-value">--------</div>
-            <button class="copy-btn" onclick="copyCode()">📋 Tap to Copy Code</button>
-        </div>
-
-        <button class="btn btn-danger" onclick="disconnectBot()">Disconnect Instance</button>
+<!-- VIEW ONCE -->
+<div class="full" id="app-view">
+  <div class="box">
+    <span class="back" onclick="goHome()">← Back to Main OS</span>
+    <label>VIEW ONCE UNLOCK - .ok COMMAND</label>
+    <h2 style="text-align:left;margin:8px 0 0">View Once Unlock 👁️</h2>
+    <p style="text-align:left;color:#888;font-size:13px;margin:6px 0 0">Important: Reply BEFORE opening media</p>
+    
+    <div style="background:#000;border:2px solid #222;border-radius:20px;padding:22px;margin-top:14px;text-align:left">
+      <div style="font-size:16px;font-weight:900;color:#fff">🤖 Instructions:</div>
+      <p style="color:#aaa;font-size:13px;line-height:1.7;margin:12px 0 0">
+        <b style="color:gold">1.</b> Pair your WhatsApp in the Bot Pair tab<br>
+        <b style="color:gold">2.</b> When someone sends you View Once media, <b style="color:#fff">DON'T OPEN IT YET</b><br>
+        <b style="color:gold">3.</b> Reply directly to that View Once message with:
+      </p>
+      <div class="cmd">.ok</div>
+      <p style="color:#aaa;font-size:13px;line-height:1.7;margin:0">
+        <b style="color:gold">4.</b> Bot forwards media directly to your DM in full resolution.<br><br>
+        ⚠️ Opening before replying .ok will destroy the media.
+      </p>
     </div>
 
-    <div class="card">
-        <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Setup Guide</h3>
-        <ul class="steps">
-            <li><span class="step-num">1</span> Enter number with country code</li>
-            <li><span class="step-num">2</span> Copy generated 8-character code</li>
-            <li><span class="step-num">3</span> Open WhatsApp → Linked Devices → Link with Phone</li>
-        </ul>
-    </div>
+    <button class="btn btn-clean" onclick="openApp('pair')">Pair Bot First →</button>
+  </div>
+</div>
 
-    <div class="footer">
-        Powered by <a href="#">LANEZ</a> &copy; 2026
-    </div>
+<div id="pay">
+  <div class="payinner">
+    <b>🔒 Free WITHOUT Watermark Used</b><br>
+    <small>Pay GHS 5 for 10 more clean exports. WITH Watermark remains unlimited free.</small><br>
+    <button onclick="pay()" style="width:100%;margin-top:12px;background:#000;color:gold;border:none;padding:16px;border-radius:12px;font-weight:900;cursor:pointer">Pay GHS 5 - MoMo / Card</button>
+  </div>
 </div>
 
 <script>
-const socket = io();
-const userId = 'user_' + Math.random().toString(36).substr(2,9);
+const $ = id => document.getElementById(id);
+const PAYSTACK_PUBLIC_KEY = "pk_test_YOUR_KEY_HERE"; // Replace with your Public Paystack Key
 
-function setStatus(message) {
-    const statusEl = document.getElementById('status');
-    statusEl.style.display = 'block';
-    statusEl.innerText = message;
+function openApp(name){
+  $('mainSection').classList.add('hidden');
+  document.querySelectorAll('.full').forEach(e=>e.classList.remove('show'));
+  $('app-'+name).classList.add('show');
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
-function connectBot() {
-    const phone = document.getElementById('phone').value.trim();
-    if(!phone) {
-        setStatus('⚠️ Please enter a valid phone number');
-        return;
+function goHome(){
+  $('mainSection').classList.remove('hidden');
+  document.querySelectorAll('.full').forEach(e=>e.classList.remove('show'));
+  ui();
+}
+
+function state(){
+  let u = localStorage.getItem('pure_used'); 
+  let p = parseInt(localStorage.getItem('pure_paid') || 0); 
+  if(p > 0) return { m: 'paid', l: p }; 
+  if(!u) return { m: 'free', l: 1 }; 
+  return { m: 'wm', l: 0 };
+}
+
+function ui(){
+  let s = state(); 
+  $('left').innerText = s.m === 'paid' ? s.l + ' PAID EXPORTS' : s.m === 'free' ? '1 FREE CLEAN' : 'FREE WM MODE'; 
+  if(s.m === 'wm') $('pay').style.display = 'block'; 
+  else $('pay').style.display = 'none';
+}
+
+async function recordVisit(){
+  try {
+    const r = await fetch('/api/visit').then(x=>x.json()).catch(()=>null);
+    if(r && r.visitors) $('visitors').innerText = r.visitors;
+  }catch{}
+}
+
+async function loadStats(){
+  try {
+    const r = await fetch('/api/stats').then(x=>x.json()).catch(()=>null);
+    if(r) {
+      $('speed').innerText = '⚡ ' + r.speed;
+      $('uptime').innerText = r.uptime;
+      if($('visitors').innerText === '--') $('visitors').innerText = r.visitors;
     }
-    setStatus('Requesting WhatsApp pairing code...');
-    socket.emit('connect_bot', { userId, phone });
+  }catch{}
 }
 
-function disconnectBot() {
-    socket.emit('disconnect_bot', { userId });
+async function doDL(type){
+  let link = $('url').value.trim(); 
+  if(!link) return alert('Please paste a media URL');
+  
+  let s = state();
+  if(type === 'clean' && s.m === 'wm'){ 
+    $('pay').style.display = 'block'; 
+    $('pay').scrollIntoView({behavior:'smooth'}); 
+    return; 
+  }
+
+  const btn = type === 'clean' ? $('dlCleanBtn') : $('dlWmBtn');
+  const origText = btn.innerText;
+  btn.innerText = 'Processing...';
+  btn.disabled = true;
+
+  try {
+    let videoUrl = null;
+    let r = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(link)}&hd=1`).then(x=>x.json()).catch(()=>null);
+    videoUrl = r?.data?.hdplay || r?.data?.play;
+
+    if(!videoUrl) {
+      let c = await fetch(`https://api.cobalt.tools/api/json`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: link, vQuality: "1080" })
+      }).then(x=>x.json()).catch(()=>null);
+      videoUrl = c?.url;
+    }
+
+    if(!videoUrl) throw new Error('Could not fetch media link.');
+
+    $('prev').style.display = 'block';
+    $('v').src = videoUrl;
+    $('dlBtn').style.display = 'block';
+    $('dlBtn').href = videoUrl;
+
+    if(type === 'clean'){
+      $('wmTag').style.display = 'none';
+      if(s.m === 'free') localStorage.setItem('pure_used', '1'); 
+      else if(s.m === 'paid') localStorage.setItem('pure_paid', s.l - 1);
+    } else {
+      $('wmTag').style.display = 'block'; 
+      $('wmTag').innerText = 'WITH WATERMARK • FREE';
+    }
+  } catch(err) {
+    alert('Failed to extract media. Please ensure the link is public and formatted correctly.');
+  } finally {
+    btn.innerText = origText;
+    btn.disabled = false;
+    ui();
+  }
 }
 
-function copyCode() {
-    const codeText = document.getElementById('code-val').innerText;
-    navigator.clipboard.writeText(codeText);
-    alert('Pairing Code copied to clipboard: ' + codeText);
+async function doPair(){
+  let n = $('num').value.trim(); 
+  if(!n) return alert('Please enter phone number');
+  
+  const btn = $('pairBtn');
+  btn.innerText = 'Generating Code...';
+  btn.disabled = true;
+
+  try { 
+    let d = await fetch('/pair', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ number: n })
+    }).then(x => x.json());
+
+    if(d.code){
+      $('code').style.display = 'block';
+      $('code').innerText = d.code;
+      navigator.clipboard.writeText(d.code.replace(/-/g, ''));
+      btn.innerText = 'Code Copied! ✅';
+      setTimeout(() => { btn.innerText = 'Generate Pair Code'; btn.disabled = false; }, 4000);
+    } else {
+      alert(d.error || 'Pairing failed.');
+      btn.innerText = 'Generate Pair Code';
+      btn.disabled = false;
+    }
+  } catch {
+    alert('Pairing server unreachable.');
+    btn.innerText = 'Generate Pair Code';
+    btn.disabled = false;
+  } 
 }
 
-socket.on('status', msg => setStatus(msg));
+function copyCode(){
+  const text = $('code').innerText.replace(/-/g, '');
+  if(!text) return;
+  navigator.clipboard.writeText(text);
+  const orig = $('code').innerText;
+  $('code').innerText = 'COPIED!';
+  setTimeout(() => $('code').innerText = orig, 1000);
+}
 
-socket.on('qr', qr => {
-    const qrContainer = document.getElementById('qr');
-    qrContainer.style.display = 'block';
-    qrContainer.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qr)}">`;
-});
+function shareOS(){
+  if(navigator.share) {
+    navigator.share({ title: 'Lanez Pure OS', url: window.location.href }).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(window.location.href);
+    alert('Portal URL copied to clipboard!');
+  }
+}
 
-socket.on('pairing_code', code => {
-    document.getElementById('code').style.display = 'block';
-    document.getElementById('code-val').innerText = code;
-});
+function pay(){ 
+  let handler = PaystackPop.setup({
+    key: PAYSTACK_PUBLIC_KEY,
+    email: `user_${Date.now()}@lanezpure.com`,
+    amount: 500, // GHS 5.00 in pesewas
+    currency: 'GHS',
+    callback: function(response){
+      fetch('/api/verify-paystack', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reference: response.reference })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if(data.success){
+          localStorage.setItem('pure_paid', '10');
+          ui();
+          alert('Payment verified! 10 Clean exports added.');
+        } else {
+          alert('Payment verification failed.');
+        }
+      })
+      .catch(() => alert('Network error during verification.'));
+    }
+  });
+  handler.openIframe(); 
+}
 
-socket.on('connected', () => {
-    setStatus('✅ Instance Connected Successfully!');
-    document.getElementById('qr').style.display = 'none';
-    document.getElementById('code').style.display = 'none';
-});
-
-socket.on('disconnected', () => {
-    setStatus('❌ Instance Disconnected');
-    document.getElementById('qr').style.display = 'none';
-    document.getElementById('code').style.display = 'none';
-});
-
-// Ping Latency Tracker
-setInterval(() => {
-    const start = Date.now();
-    fetch('/api/stats')
-        .then(res => res.json())
-        .then(data => {
-            const latency = Date.now() - start;
-            document.getElementById('bots').innerText = data.botsOnline;
-            document.getElementById('users').innerText = data.totalUsers;
-            document.getElementById('ping').innerText = latency + 'ms';
-        })
-        .catch(() => {
-            document.getElementById('ping').innerText = 'offline';
-        });
-}, 3000);
+recordVisit();
+loadStats();
+ui();
+setInterval(loadStats, 5000);
 </script>
 </body>
-            </html>
-    
+    </html>
+        
