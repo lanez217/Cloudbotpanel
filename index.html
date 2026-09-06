@@ -13,7 +13,7 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;700;900&display=swap');
 *{font-family:'Inter',sans-serif;box-sizing:border-box}
-body{background:#070709;color:#fff;margin:0;min-height:100vh}
+body{background:#070709;color:#fff;margin:0;min-height:100vh;overflow-x:hidden}
 .header{padding:28px 20px;display:flex;justify-content:space-between;align-items:center;max-width:900px;margin:0 auto}
 .logo{font-size:26px;font-weight:900} .logo span{color:gold}
 .badge{background:#1a1a1e;border:1px solid #222;padding:8px 14px;border-radius:99px;font-size:11px}
@@ -21,11 +21,16 @@ body{background:#070709;color:#fff;margin:0;min-height:100vh}
 .hero h1{font-size:48px;line-height:.9;margin:10px 0;font-weight:900;letter-spacing:-2px}
 .hero p{color:#888;font-size:16px}
 
-/* Daily Rewards Bar */
-.reward-bar{max-width:900px;margin:10px auto;padding:16px;background:#121214;border:1px solid #222;border-radius:20px;display:flex;justify-content:space-between;align-items:center}
-.coin-count{font-weight:900;color:gold;font-size:16px}
-.claim-btn{background:gold;color:#000;border:none;padding:10px 18px;border-radius:12px;font-weight:900;cursor:pointer}
+/* Daily Rewards Bar & Animations */
+.reward-bar{max-width:900px;margin:10px auto;padding:16px;background:#121214;border:1px solid #222;border-radius:20px;display:flex;justify-content:space-between;align-items:center;position:relative}
+.coin-count{font-weight:900;color:gold;font-size:16px;transition:transform 0.3s}
+.claim-btn{background:gold;color:#000;border:none;padding:10px 18px;border-radius:12px;font-weight:900;cursor:pointer;transition:transform 0.2s, background 0.2s}
+.claim-btn:active{transform:scale(0.95)}
 .claim-btn:disabled{background:#333;color:#666;cursor:not-allowed}
+
+/* Coin Pop Animation Overlay */
+.coin-anim{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);font-size:80px;pointer-events:none;z-index:999;transition:transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.5s;opacity:0}
+.coin-anim.active{transform:translate(-50%,-50%) scale(1.5);opacity:1}
 
 .grid{max-width:900px;margin:20px auto;display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:0 20px}
 .app{background:#121214;border:1px solid #222;border-radius:24px;padding:24px;text-align:left;cursor:pointer;transition:.2s}
@@ -53,9 +58,6 @@ input:focus{border-color:gold}
 .hidden{display:none !important}
 .cmd{background:#000;border:1px solid #222;padding:14px;border-radius:12px;color:gold;text-align:center;font-weight:900;margin:10px 0;font-size:20px}
 
-/* Visual Overlay for WM Mode */
-.wm-overlay{position:absolute;bottom:20px;right:20px;background:rgba(0,0,0,0.8);color:gold;padding:8px 14px;border-radius:8px;font-weight:900;font-size:12px;border:1px solid gold;pointer-events:none}
-
 .stat{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:16px}
 .stat div{background:#000;border:1px solid #222;padding:14px;border-radius:16px;text-align:center}
 .stat b{color:gold;display:block;font-size:18px} .stat span{font-size:11px;color:#888}
@@ -67,6 +69,8 @@ input:focus{border-color:gold}
 </style>
 </head>
 <body>
+
+<div id="coinAnim" class="coin-anim">🪙 +10</div>
 
 <div class="header">
   <div class="logo">Lanez <span>Pure™</span> OS</div>
@@ -104,17 +108,16 @@ input:focus{border-color:gold}
     <h2 style="text-align:left;margin:8px 0 0">Pure Downloader 🎬</h2>
     <input id="url" placeholder="Paste TikTok / IG / FB / X link" style="margin-top:12px">
     <button class="btn btn-clean" id="dlCleanBtn" onclick="doDL('clean')">✨ WITHOUT Watermark</button>
-    <button class="btn btn-wm" id="dlWmBtn" onclick="doDL('wm')">💧 WITH Watermark (Free Always)</button>
+    <button class="btn btn-wm" id="dlWmBtn" onclick="doDL('wm')">💧 WITH Watermark (Blurred Free)</button>
     
     <div id="prev" class="preview">
       <video id="v" controls></video>
-      <div id="wmOverlay" class="wm-overlay" style="display:none">LANEZ PURE™ OS</div>
-      <a id="dlBtn" href="#" target="_blank" style="display:none;background:#fff;color:#000;padding:16px;text-align:center;font-weight:900;text-decoration:none;border-radius:12px;margin:12px;display:block">⬇️ Download Video</a>
+      <a id="dlBtn" href="#" target="_blank" download="video.mp4" style="display:none;background:#fff;color:#000;padding:16px;text-align:center;font-weight:900;text-decoration:none;border-radius:12px;margin:12px;display:block">⬇️ Download Processed Video</a>
     </div>
 
     <div class="info">
       <h4>ℹ️ Pricing & Pass Info</h4>
-      <p><b style="color:gold">WITHOUT:</b> Requires active Pass or GHS 5 payment.<br><b style="color:#fff">WITH:</b> Always FREE, includes Lanez Pure™ overlay tag.</p>
+      <p><b style="color:gold">WITHOUT:</b> Requires active Pass or GHS 5 payment.<br><b style="color:#fff">WITH:</b> Always FREE, includes background blur & watermark overlay.</p>
     </div>
   </div>
 </div>
@@ -132,12 +135,12 @@ input:focus{border-color:gold}
         <div class="redeem-card">
           <div style="font-weight:900">1 Day Pass</div>
           <div style="font-size:11px;color:#888;margin-top:4px">Unlimited Clean Exports</div>
-          <button onclick="redeemPass(15, 1)">15 Coins</button>
+          <button onclick="redeemPass(100, 1)">100 Coins</button>
         </div>
         <div class="redeem-card">
           <div style="font-weight:900">3 Day Pass</div>
           <div style="font-size:11px;color:#888;margin-top:4px">Unlimited Clean Exports</div>
-          <button onclick="redeemPass(30, 3)">30 Coins</button>
+          <button onclick="redeemPass(250, 3)">250 Coins</button>
         </div>
       </div>
     </div>
@@ -249,13 +252,18 @@ function claimDaily(){
   let coins = parseInt(localStorage.getItem('pure_coins') || 0) + 10;
   localStorage.setItem('pure_coins', coins);
   localStorage.setItem('pure_last_claim', Date.now());
-  alert('🎉 Claimed 10 Daily Coins!');
+
+  // Trigger Pop Animation
+  const anim = $('coinAnim');
+  anim.classList.add('active');
+  setTimeout(() => anim.classList.remove('active'), 1200);
+
   ui();
 }
 
 function redeemPass(cost, days){
   let coins = parseInt(localStorage.getItem('pure_coins') || 0);
-  if(coins < cost) return alert('Not enough coins! Visit daily to earn more.');
+  if(coins < cost) return alert(`Not enough coins! You need ${cost} coins.`);
 
   localStorage.setItem('pure_coins', coins - cost);
   let currentPass = parseInt(localStorage.getItem('pure_pass_until') || Date.now());
@@ -263,7 +271,7 @@ function redeemPass(cost, days){
   let newPassTime = baseTime + (days * 24 * 60 * 60 * 1000);
   
   localStorage.setItem('pure_pass_until', newPassTime);
-  alert(`🎉 Redeemed ${days} Day Pass! Unlimited watermark-free exports unlocked.`);
+  alert(`🎉 Redeemed ${days} Day Pass! Unlimited clean exports unlocked.`);
   ui();
 }
 
@@ -280,39 +288,50 @@ async function doDL(type){
 
   const btn = type === 'clean' ? $('dlCleanBtn') : $('dlWmBtn');
   const origText = btn.innerText;
-  btn.innerText = 'Processing...';
+  btn.innerText = 'Extracting Media...';
   btn.disabled = true;
 
   try {
-    let videoUrl = null;
+    let rawVideoUrl = null;
     let r = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(link)}&hd=1`).then(x=>x.json()).catch(()=>null);
-    videoUrl = r?.data?.hdplay || r?.data?.play;
+    rawVideoUrl = r?.data?.hdplay || r?.data?.play;
 
-    if(!videoUrl) {
+    if(!rawVideoUrl) {
       let c = await fetch(`https://api.cobalt.tools/api/json`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({ url: link, vQuality: "1080" })
       }).then(x=>x.json()).catch(()=>null);
-      videoUrl = c?.url;
+      rawVideoUrl = c?.url;
     }
 
-    if(!videoUrl) throw new Error('Could not fetch media link.');
+    if(!rawVideoUrl) throw new Error('Could not extract video.');
+
+    btn.innerText = type === 'wm' ? 'Applying Blur & Watermark...' : 'Finalizing...';
+
+    // Process video via backend FFmpeg endpoint
+    let res = await fetch('/api/process-video', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ videoUrl: rawVideoUrl, mode: type })
+    });
+
+    if(!res.ok) throw new Error('Failed to process video.');
+
+    let videoBlob = await res.blob();
+    let processedObjectUrl = URL.createObjectURL(videoBlob);
 
     $('prev').style.display = 'block';
-    $('v').src = videoUrl;
+    $('v').src = processedObjectUrl;
     $('dlBtn').style.display = 'block';
-    $('dlBtn').href = videoUrl;
+    $('dlBtn').href = processedObjectUrl;
 
     if(type === 'clean'){
-      $('wmOverlay').style.display = 'none';
       if(s.m === 'free') localStorage.setItem('pure_used', '1'); 
       else if(s.m === 'paid') localStorage.setItem('pure_paid', s.l - 1);
-    } else {
-      $('wmOverlay').style.display = 'block'; 
     }
   } catch(err) {
-    alert('Failed to extract media. Check link public accessibility.');
+    alert('Failed to process video. Please check the URL or try again.');
   } finally {
     btn.innerText = origText;
     btn.disabled = false;
@@ -390,5 +409,5 @@ function pay(){
 ui();
 </script>
 </body>
-  </html>
-  
+      </html>
+      
