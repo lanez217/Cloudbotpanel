@@ -20,7 +20,14 @@ body{background:#070709;color:#fff;margin:0;min-height:100vh}
 .hero{max-width:900px;margin:0 auto;padding:20px;text-align:center}
 .hero h1{font-size:48px;line-height:.9;margin:10px 0;font-weight:900;letter-spacing:-2px}
 .hero p{color:#888;font-size:16px}
-.grid{max-width:900px;margin:30px auto;display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:0 20px}
+
+/* Daily Rewards Bar */
+.reward-bar{max-width:900px;margin:10px auto;padding:16px;background:#121214;border:1px solid #222;border-radius:20px;display:flex;justify-content:space-between;align-items:center}
+.coin-count{font-weight:900;color:gold;font-size:16px}
+.claim-btn{background:gold;color:#000;border:none;padding:10px 18px;border-radius:12px;font-weight:900;cursor:pointer}
+.claim-btn:disabled{background:#333;color:#666;cursor:not-allowed}
+
+.grid{max-width:900px;margin:20px auto;display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:0 20px}
 .app{background:#121214;border:1px solid #222;border-radius:24px;padding:24px;text-align:left;cursor:pointer;transition:.2s}
 .app:hover{border-color:gold;transform:translateY(-2px)}
 .app .icon{font-size:36px;margin-bottom:12px}
@@ -45,10 +52,18 @@ input:focus{border-color:gold}
 .info h4{margin:0 0 8px;font-size:14px;color:gold} .info p{margin:0;color:#888;font-size:12px;line-height:1.6}
 .hidden{display:none !important}
 .cmd{background:#000;border:1px solid #222;padding:14px;border-radius:12px;color:gold;text-align:center;font-weight:900;margin:10px 0;font-size:20px}
-.tag{position:absolute;top:10px;left:10px;background:rgba(0,0,0,.7);padding:6px 10px;border-radius:8px;font-size:10px;font-weight:800}
+
+/* Visual Overlay for WM Mode */
+.wm-overlay{position:absolute;bottom:20px;right:20px;background:rgba(0,0,0,0.8);color:gold;padding:8px 14px;border-radius:8px;font-weight:900;font-size:12px;border:1px solid gold;pointer-events:none}
+
 .stat{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:16px}
 .stat div{background:#000;border:1px solid #222;padding:14px;border-radius:16px;text-align:center}
 .stat b{color:gold;display:block;font-size:18px} .stat span{font-size:11px;color:#888}
+
+.redeem-box{margin-top:18px;background:#000;border:1px solid #222;padding:16px;border-radius:16px}
+.redeem-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.redeem-card{background:#121214;border:1px solid #333;padding:12px;border-radius:12px;text-align:center}
+.redeem-card button{background:gold;color:#000;border:none;padding:8px 12px;border-radius:8px;font-weight:900;margin-top:6px;cursor:pointer;width:100%}
 </style>
 </head>
 <body>
@@ -63,11 +78,22 @@ input:focus{border-color:gold}
     <h1>All Tools.<br>One <span style="color:gold">Pure™</span> OS.</h1>
     <p>Trusted by creators. HD exports, Bot pairing & Unlocking.</p>
   </div>
+
+  <div style="padding:0 20px;">
+    <div class="reward-bar">
+      <div>
+        <span style="font-size:12px;color:#888;display:block">DAILY REWARDS</span>
+        <span class="coin-count">🪙 <span id="coins">0</span> Coins</span>
+      </div>
+      <button class="claim-btn" id="claimBtn" onclick="claimDaily()">🎁 Claim +10 Coins</button>
+    </div>
+  </div>
+
   <div class="grid">
     <div class="app" onclick="openApp('dl')"><div class="icon">🎬</div><h3>Pure Downloader</h3><p>TT, IG, FB, X<br>WITH / WITHOUT WM</p></div>
     <div class="app" onclick="openApp('pair')"><div class="icon">🔗</div><h3>Bot Pair</h3><p>Speed • Uptime<br>Instant Code</p></div>
     <div class="app" onclick="openApp('view')"><div class="icon">👁️</div><h3>View Once</h3><p>Reply .ok BEFORE open</p></div>
-    <div class="app" onclick="shareOS()"><div class="icon">🔗</div><h3>Share OS</h3><p>Invite Friends<br>Spread the word</p></div>
+    <div class="app" onclick="openApp('store')"><div class="icon">🪙</div><h3>Coin Store</h3><p>Redeem Pass Days<br>Free Watermark Removal</p></div>
   </div>
 </div>
 
@@ -82,13 +108,38 @@ input:focus{border-color:gold}
     
     <div id="prev" class="preview">
       <video id="v" controls></video>
-      <div id="wmTag" class="tag" style="display:none"></div>
+      <div id="wmOverlay" class="wm-overlay" style="display:none">LANEZ PURE™ OS</div>
       <a id="dlBtn" href="#" target="_blank" style="display:none;background:#fff;color:#000;padding:16px;text-align:center;font-weight:900;text-decoration:none;border-radius:12px;margin:12px;display:block">⬇️ Download Video</a>
     </div>
 
     <div class="info">
-      <h4>ℹ️ Pricing Info</h4>
-      <p><b style="color:gold">WITHOUT:</b> 1st FREE, after GHS 5 for 10 exports<br><b style="color:#fff">WITH:</b> Always FREE unlimited, HD quality.</p>
+      <h4>ℹ️ Pricing & Pass Info</h4>
+      <p><b style="color:gold">WITHOUT:</b> Requires active Pass or GHS 5 payment.<br><b style="color:#fff">WITH:</b> Always FREE, includes Lanez Pure™ overlay tag.</p>
+    </div>
+  </div>
+</div>
+
+<div class="full" id="app-store">
+  <div class="box">
+    <span class="back" onclick="goHome()">← Back to Main OS</span>
+    <label>COIN STORE / REDEEM PASS DAYS</label>
+    <h2 style="text-align:left;margin:8px 0 0">Redeem Free Passes 🪙</h2>
+    <p style="text-align:left;color:#888;font-size:13px;margin:6px 0 0">Use your daily coins to unlock unlimited watermark-free exports.</p>
+
+    <div class="redeem-box">
+      <div style="font-weight:900;color:gold">Your Balance: 🪙 <span id="storeCoins">0</span> Coins</div>
+      <div class="redeem-grid">
+        <div class="redeem-card">
+          <div style="font-weight:900">1 Day Pass</div>
+          <div style="font-size:11px;color:#888;margin-top:4px">Unlimited Clean Exports</div>
+          <button onclick="redeemPass(15, 1)">15 Coins</button>
+        </div>
+        <div class="redeem-card">
+          <div style="font-weight:900">3 Day Pass</div>
+          <div style="font-size:11px;color:#888;margin-top:4px">Unlimited Clean Exports</div>
+          <button onclick="redeemPass(30, 3)">30 Coins</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -109,11 +160,6 @@ input:focus{border-color:gold}
     <input id="num" placeholder="2335XXXXXXXX" type="number" style="margin-top:18px">
     <button class="btn btn-clean" id="pairBtn" onclick="doPair()">Generate Pair Code</button>
     <div id="code" class="code" onclick="copyCode()"></div>
-
-    <div class="info">
-      <h4>ℹ️ How to Pair</h4>
-      <p>1. Enter phone number with country code (e.g. 233...)<br>2. Tap Generate Pair Code<br>3. Copy code<br>4. Open WhatsApp > Linked Devices > Link with phone number > Paste code<br>• Code expires in 60 seconds.</p>
-    </div>
   </div>
 </div>
 
@@ -128,24 +174,18 @@ input:focus{border-color:gold}
       <div style="font-size:16px;font-weight:900;color:#fff">🤖 Instructions:</div>
       <p style="color:#aaa;font-size:13px;line-height:1.7;margin:12px 0 0">
         <b style="color:gold">1.</b> Pair your WhatsApp in the Bot Pair tab<br>
-        <b style="color:gold">2.</b> When someone sends you View Once media, <b style="color:#fff">DON'T OPEN IT YET</b><br>
-        <b style="color:gold">3.</b> Reply directly to that View Once message with:
+        <b style="color:gold">2.</b> Reply directly to that View Once message with:
       </p>
       <div class="cmd">.ok</div>
-      <p style="color:#aaa;font-size:13px;line-height:1.7;margin:0">
-        <b style="color:gold">4.</b> Bot forwards media directly to your DM in full resolution.<br><br>
-        ⚠️ Opening before replying .ok will destroy the media.
-      </p>
     </div>
-
     <button class="btn btn-clean" onclick="openApp('pair')">Pair Bot First →</button>
   </div>
 </div>
 
 <div id="pay">
   <div class="payinner">
-    <b>🔒 Free WITHOUT Watermark Used</b><br>
-    <small>Pay GHS 5 for 10 more clean exports. WITH Watermark remains unlimited free.</small><br>
+    <b>🔒 Free Clean Exports Expired</b><br>
+    <small>Redeem Pass Days using Coins or pay GHS 5 for 10 exports.</small><br>
     <button onclick="pay()" style="width:100%;margin-top:12px;background:#000;color:gold;border:none;padding:16px;border-radius:12px;font-weight:900;cursor:pointer">Pay GHS 5 - MoMo / Card</button>
   </div>
 </div>
@@ -168,8 +208,14 @@ function goHome(){
 }
 
 function state(){
-  let u = localStorage.getItem('pure_used'); 
+  let passUntil = parseInt(localStorage.getItem('pure_pass_until') || 0);
   let p = parseInt(localStorage.getItem('pure_paid') || 0); 
+  let u = localStorage.getItem('pure_used');
+
+  if(Date.now() < passUntil) {
+    let daysLeft = Math.ceil((passUntil - Date.now()) / (1000 * 60 * 60 * 24));
+    return { m: 'pass', l: daysLeft };
+  }
   if(p > 0) return { m: 'paid', l: p }; 
   if(!u) return { m: 'free', l: 1 }; 
   return { m: 'wm', l: 0 };
@@ -177,27 +223,48 @@ function state(){
 
 function ui(){
   let s = state(); 
-  $('left').innerText = s.m === 'paid' ? s.l + ' PAID EXPORTS' : s.m === 'free' ? '1 FREE CLEAN' : 'FREE WM MODE'; 
+  $('left').innerText = s.m === 'pass' ? s.l + ' DAY PASS ACTIVE' : s.m === 'paid' ? s.l + ' PAID EXPORTS' : s.m === 'free' ? '1 FREE CLEAN' : 'FREE WM MODE'; 
   if(s.m === 'wm') $('pay').style.display = 'block'; 
   else $('pay').style.display = 'none';
+
+  let coins = parseInt(localStorage.getItem('pure_coins') || 0);
+  $('coins').innerText = coins;
+  $('storeCoins').innerText = coins;
+
+  let lastClaim = parseInt(localStorage.getItem('pure_last_claim') || 0);
+  let canClaim = (Date.now() - lastClaim) > (24 * 60 * 60 * 1000);
+  if(!canClaim) {
+    $('claimBtn').innerText = 'Claimed Today ✅';
+    $('claimBtn').disabled = true;
+  } else {
+    $('claimBtn').innerText = '🎁 Claim +10 Coins';
+    $('claimBtn').disabled = false;
+  }
 }
 
-async function recordVisit(){
-  try {
-    const r = await fetch('/api/visit').then(x=>x.json()).catch(()=>null);
-    if(r && r.visitors) $('visitors').innerText = r.visitors;
-  }catch{}
+function claimDaily(){
+  let lastClaim = parseInt(localStorage.getItem('pure_last_claim') || 0);
+  if((Date.now() - lastClaim) <= (24 * 60 * 60 * 1000)) return;
+
+  let coins = parseInt(localStorage.getItem('pure_coins') || 0) + 10;
+  localStorage.setItem('pure_coins', coins);
+  localStorage.setItem('pure_last_claim', Date.now());
+  alert('🎉 Claimed 10 Daily Coins!');
+  ui();
 }
 
-async function loadStats(){
-  try {
-    const r = await fetch('/api/stats').then(x=>x.json()).catch(()=>null);
-    if(r) {
-      $('speed').innerText = '⚡ ' + r.speed;
-      $('uptime').innerText = r.uptime;
-      if($('visitors').innerText === '--') $('visitors').innerText = r.visitors;
-    }
-  }catch{}
+function redeemPass(cost, days){
+  let coins = parseInt(localStorage.getItem('pure_coins') || 0);
+  if(coins < cost) return alert('Not enough coins! Visit daily to earn more.');
+
+  localStorage.setItem('pure_coins', coins - cost);
+  let currentPass = parseInt(localStorage.getItem('pure_pass_until') || Date.now());
+  let baseTime = Math.max(Date.now(), currentPass);
+  let newPassTime = baseTime + (days * 24 * 60 * 60 * 1000);
+  
+  localStorage.setItem('pure_pass_until', newPassTime);
+  alert(`🎉 Redeemed ${days} Day Pass! Unlimited watermark-free exports unlocked.`);
+  ui();
 }
 
 async function doDL(type){
@@ -238,15 +305,14 @@ async function doDL(type){
     $('dlBtn').href = videoUrl;
 
     if(type === 'clean'){
-      $('wmTag').style.display = 'none';
+      $('wmOverlay').style.display = 'none';
       if(s.m === 'free') localStorage.setItem('pure_used', '1'); 
       else if(s.m === 'paid') localStorage.setItem('pure_paid', s.l - 1);
     } else {
-      $('wmTag').style.display = 'block'; 
-      $('wmTag').innerText = 'WITH WATERMARK • FREE';
+      $('wmOverlay').style.display = 'block'; 
     }
   } catch(err) {
-    alert('Failed to extract media. Please check the link or ensure it is public.');
+    alert('Failed to extract media. Check link public accessibility.');
   } finally {
     btn.innerText = origText;
     btn.disabled = false;
@@ -281,7 +347,7 @@ async function doPair(){
       btn.disabled = false;
     }
   } catch {
-    alert('Pairing request failed. Ensure server dependencies are up to date.');
+    alert('Pairing request failed.');
     btn.innerText = 'Generate Pair Code';
     btn.disabled = false;
   } 
@@ -294,15 +360,6 @@ function copyCode(){
   const orig = $('code').innerText;
   $('code').innerText = 'COPIED!';
   setTimeout(() => $('code').innerText = orig, 1000);
-}
-
-function shareOS(){
-  if(navigator.share) {
-    navigator.share({ title: 'Lanez Pure OS', url: window.location.href }).catch(()=>{});
-  } else {
-    navigator.clipboard.writeText(window.location.href);
-    alert('Portal URL copied to clipboard!');
-  }
 }
 
 function pay(){ 
@@ -323,20 +380,15 @@ function pay(){
           localStorage.setItem('pure_paid', '10');
           ui();
           alert('Payment verified! 10 Clean exports added.');
-        } else {
-          alert('Payment verification failed.');
         }
-      })
-      .catch(() => alert('Network error during verification.'));
+      });
     }
   });
   handler.openIframe(); 
 }
 
-recordVisit();
-loadStats();
 ui();
-setInterval(loadStats, 5000);
 </script>
 </body>
-</html>
+  </html>
+  
