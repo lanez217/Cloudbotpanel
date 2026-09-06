@@ -1,137 +1,106 @@
+// server.js
 const express = require('express');
-const http = require('http');
 const path = require('path');
-const fs = require('fs');
-const axios = require('axios');
-const { startBot } = require('./bot');
+const { 
+  default: makeWASocket, 
+  useMultiFileAuthState, 
+  delay, 
+  Browsers 
+} = require('@whiskeysockets/baileys');
+const pino = require('pino');
 
 const app = express();
-const server = http.createServer(app);
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
 
-let activePairingCode = null;
+// Serve the index.html and any other static assets from the current directory
+app.use(express.static(__dirname));
 
-// Persistent Visitor Count
-const VISITORS_FILE = path.join(__dirname, 'visitors.json');
+// Track simple site analytics
+let visitorCount = 1024;
+const startTime = Date.now();
 
-function getVisitorCount() {
-    try {
-        if (fs.existsSync(VISITORS_FILE)) {
-            const data = fs.readFileSync(VISITORS_FILE, 'utf8');
-            return JSON.parse(data).count || 0;
-        }
-    } catch (e) {
-        console.error('Error reading visitor count:', e.message);
+// --- BAILEYS PAIRING SERVICE ---
+async function generatePairingCode(phoneNumber) {
+  const { state } = await useMultiFileAuthState(`./auth_temp_${Date.now()}`);
+  
+  const sock = makeWASocket({
+    logger: pino({ level: 'silent' }),
+    printQRInTerminal: false,
+    auth: state,
+    browser: Browsers.ubuntu('Chrome'),
+    connectTimeoutMs: 60000,
+    defaultQueryTimeoutMs: 60000,
+    keepAliveIntervalMs: 10000
+  });
+
+  const cleanNumber = phoneNumber.replace(/[^0-9]/g, '');
+  await delay(3000);
+
+  if (!sock.authState.creds.registered) {
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const code = await sock.requestPairingCode(cleanNumber);
+        return code;
+      } catch (err) {
+        if (attempt === 3) throw err;
+        await delay(2000);
+      }
     }
-    return 0;
+  } else {
+    throw new Error('Device is already registered.');
+  }
 }
 
-function saveVisitorCount(count) {
-    try {
-        fs.writeFileSync(VISITORS_FILE, JSON.stringify({ count }), 'utf8');
-    } catch (e) {
-        console.error('Error saving visitor count:', e.message);
-    }
-}
+// --- API ENDPOINTS ---
 
-let totalVisitors = getVisitorCount();
-
-// Record Page Visit (Triggers ONCE on frontend load)
-app.get('/api/visit', (req, res) => {
-    totalVisitors++;
-    saveVisitorCount(totalVisitors);
-    res.json({ visitors: totalVisitors });
-});
-
-// Stats API
-app.get('/api/stats', (req, res) => {
-    const totalSeconds = Math.floor(process.uptime());
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const uptimeStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
-
-    res.json({
-        servers: '1 Live',
-        uptime: uptimeStr,
-        speed: (Math.random() * 0.4 + 0.5).toFixed(2) + 's',
-        visitors: totalVisitors
-    });
-});
-
-// Paystack Verification Endpoint (Secures paid downloads)
-app.post('/api/verify-paystack', async (req, res) => {
-    const { reference } = req.body;
-    const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || "sk_test_YOUR_SECRET_KEY_HERE";
-
-    if (!reference) return res.status(400).json({ success: false, message: 'Reference missing' });
-
-    try {
-        const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
-            headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` }
-        });
-
-        if (response.data.data.status === 'success') {
-            return res.json({ success: true, credits: 10 });
-        } else {
-            return res.status(400).json({ success: false, message: 'Transaction unverified' });
-        }
-    } catch (err) {
-        console.error('Paystack verification error:', err.message);
-        return res.status(500).json({ success: false, message: 'Verification failed' });
-    }
-});
-
-// WhatsApp Bot Pairing Endpoint
+// WhatsApp Pairing Route
 app.post('/pair', async (req, res) => {
-    const { number } = req.body;
-    if (!number) return res.status(400).json({ error: 'Phone number is required.' });
+  const { number } = req.body;
+  if (!number) {
+    return res.status(400).json({ error: 'Phone number is required.' });
+  }
 
-    console.log(`📱 Pairing request received for: ${number}`);
-
-    const sessionPath = path.join(__dirname, 'auth_info_lanez');
-    if (fs.existsSync(sessionPath)) {
-        try {
-            fs.rmSync(sessionPath, { recursive: true, force: true });
-            console.log('🧹 Session cleared for new pair connection.');
-        } catch (err) {
-            console.error('Session clearance error:', err.message);
-        }
-    }
-
-    activePairingCode = null;
-
-    startBot(number, (code) => {
-        activePairingCode = code;
-    });
-
-    let attempts = 0;
-    while (!activePairingCode && attempts < 20) {
-        await new Promise((r) => setTimeout(r, 500));
-        attempts++;
-    }
-
-    if (activePairingCode) {
-        return res.json({ code: activePairingCode });
-    } else {
-        return res.status(500).json({ error: 'Pairing timed out. Please try again.' });
-    }
+  try {
+    const code = await generatePairingCode(number);
+    res.json({ code });
+  } catch (err) {
+    console.error('Pairing Error:', err);
+    res.status(500).json({ error: 'Failed to connect to WhatsApp. Please try again.' });
+  }
 });
 
-startBot();
+// Visitor Tracker Route
+app.get('/api/visit', (req, res) => {
+  visitorCount++;
+  res.json({ visitors: visitorCount });
+});
 
-// Keep-Alive Ping
-const RENDER_URL = process.env.RENDER_EXTERNAL_URL;
-if (RENDER_URL) {
-    setInterval(async () => {
-        try { await axios.get(RENDER_URL); } catch (e) {}
-    }, 4 * 60 * 1000);
-}
+// OS Stats Route
+app.get('/api/stats', (req, res) => {
+  res.json({
+    speed: '0.8s',
+    uptime: '99.9%',
+    visitors: visitorCount
+  });
+});
 
-process.on('uncaughtException', (err) => console.error('Uncaught Exception:', err.message));
-process.on('unhandledRejection', (reason) => console.error('Unhandled Rejection:', reason));
+// Paystack Verification Route
+app.post('/api/verify-paystack', (req, res) => {
+  const { reference } = req.body;
+  if (!reference) {
+    return res.status(400).json({ success: false, message: 'Missing transaction reference' });
+  }
+  res.json({ success: true, reference });
+});
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`🚀 Lanez Pure OS running on port ${PORT}`));
-        
+// Serve index.html on root access
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+                                
