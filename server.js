@@ -16,7 +16,6 @@ const {
 } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 
-// Set static FFmpeg path
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 const app = express();
@@ -27,82 +26,93 @@ app.use(express.static(__dirname));
 
 let visitorCount = 1024;
 
-// --- BAILEYS SESSIONS MANAGER ---
-const activeSessions = new Map();
-
-async function getPairingCodeForNumber(phoneNumber) {
+// --- WHATSAPP PAIRING LOGIC ---
+async function generatePairingCode(phoneNumber) {
   const cleanNumber = phoneNumber.replace(/[^0-9]/g, '');
-  
-  // Store sessions in OS temporary directory to work safely on cloud hosts
-  const authDir = path.join(os.tmpdir(), `session_${cleanNumber}`);
+  if (!cleanNumber || cleanNumber.length < 10) {
+    throw new Error('INVALID_NUMBER');
+  }
+
+  // Safe isolated directory per attempt in system temp folder
+  const authDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wa-auth-'));
   const { state, saveCreds } = await useMultiFileAuthState(authDir);
 
-  return new Promise((resolve, reject) => {
-    const sock = makeWASocket({
-      logger: pino({ level: 'silent' }),
-      printQRInTerminal: false,
-      auth: state,
-      browser: Browsers.ubuntu('Chrome'),
-      connectTimeoutMs: 60000,
-      defaultQueryTimeoutMs: 60000,
-      keepAliveIntervalMs: 10000,
-      syncFullHistory: false
-    });
+  const sock = makeWASocket({
+    logger: pino({ level: 'silent' }),
+    printQRInTerminal: false,
+    auth: state,
+    browser: Browsers.ubuntu('Chrome'),
+    connectTimeoutMs: 60000,
+    defaultQueryTimeoutMs: 60000,
+    keepAliveIntervalMs: 15000,
+    syncFullHistory: false
+  });
 
-    sock.ev.on('creds.update', saveCreds);
+  sock.ev.on('creds.update', saveCreds);
+
+  return new Promise((resolve, reject) => {
+    let codeSent = false;
 
     sock.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect } = update;
 
-      if (connection === 'open') {
-        activeSessions.set(cleanNumber, sock);
-      } else if (connection === 'close') {
-        activeSessions.delete(cleanNumber);
-        const code = lastDisconnect?.error?.output?.statusCode;
-        if (code !== DisconnectReason.loggedOut) {
-          // Clean up state if connection closed before code was fetched
+      // Request pairing code as soon as connection is open
+      if ((connection === 'connecting' || connection === 'open') && !codeSent) {
+        codeSent = true;
+        await delay(3000); // Allow handshake to finalize
+        try {
+          if (!sock.authState.creds.registered) {
+            const code = await sock.requestPairingCode(cleanNumber);
+            resolve(code);
+          } else {
+            reject(new Error('Device already registered.'));
+          }
+        } catch (err) {
+          reject(err);
+        }
+      }
+
+      if (connection === 'close') {
+        if (!codeSent) {
+          reject(new Error('Connection closed before code was generated.'));
         }
       }
     });
 
-    // Request pairing code only after socket initializes
-    setTimeout(async () => {
-      try {
-        if (!sock.authState.creds.registered) {
-          const code = await sock.requestPairingCode(cleanNumber);
-          resolve(code);
-        } else {
-          reject(new Error('Device is already registered.'));
-        }
-      } catch (err) {
-        reject(err);
-      }
-    }, 4000);
+    // Timeout safety fallback
+    setTimeout(() => {
+      if (!codeSent) reject(new Error('Connection timed out.'));
+    }, 25000);
   });
 }
 
-// Helper to download remote file to temp folder
+// --- HELPER TO DOWNLOAD & HANDLE REDIRECTS ---
 function downloadFile(url, dest) {
   return new Promise((resolve, reject) => {
     const file = fs.createWriteStream(dest);
-    const client = url.startsWith('https') ? https : http;
     
-    const request = client.get(url, (response) => {
-      if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
-        return downloadFile(response.headers.location, dest).then(resolve).catch(reject);
-      }
-      response.pipe(file);
-      file.on('finish', () => file.close(resolve));
-    });
+    const request = (targetUrl) => {
+      const client = targetUrl.startsWith('https') ? https : http;
+      client.get(targetUrl, (response) => {
+        if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
+          return request(response.headers.location);
+        }
+        if (response.statusCode !== 200) {
+          return reject(new Error(`Download failed with status ${response.statusCode}`));
+        }
+        response.pipe(file);
+        file.on('finish', () => file.close(resolve));
+      }).on('error', (err) => {
+        fs.unlink(dest, () => {});
+        reject(err);
+      });
+    };
 
-    request.on('error', (err) => {
-      fs.unlink(dest, () => {});
-      reject(err);
-    });
+    request(url);
   });
 }
 
-// --- VIDEO PROCESSING ENDPOINT (WATERMARK & BLUR) ---
+// --- VIDEO PROCESSING ENDPOINT ---
 app.post('/api/process-video', async (req, res) => {
   const { videoUrl, mode } = req.body;
   if (!videoUrl) return res.status(400).json({ error: 'Video URL required.' });
@@ -132,32 +142,34 @@ app.post('/api/process-video', async (req, res) => {
         });
       })
       .on('error', (err) => {
-        console.error('FFmpeg error:', err);
+        console.error('FFmpeg processing error:', err);
         fs.unlink(inputPath, () => {});
         fs.unlink(outputPath, () => {});
-        res.status(500).json({ error: 'Failed to process video watermark.' });
+        res.status(500).json({ error: 'Video processing failed.' });
       });
   } catch (err) {
-    console.error('Processing error:', err);
-    res.status(500).json({ error: 'Failed to download source video.' });
+    console.error('Video Download Error:', err);
+    res.status(500).json({ error: 'Failed to retrieve media file.' });
   }
 });
 
-// --- WHATSAPP PAIRING API ---
+// --- API ROUTES ---
 app.post('/pair', async (req, res) => {
   const { number } = req.body;
   if (!number) return res.status(400).json({ error: 'Phone number is required.' });
 
   try {
-    const code = await getPairingCodeForNumber(number);
+    const code = await generatePairingCode(number);
     res.json({ code });
   } catch (err) {
-    console.error('Pairing Error:', err);
-    res.status(500).json({ error: 'Connection closed or failed. Please check phone number and try again.' });
+    if (err.message === 'INVALID_NUMBER') {
+      return res.status(400).json({ error: 'Please enter a valid phone number with country code (e.g., 233597789459).' });
+    }
+    console.error('Pair Error:', err);
+    res.status(500).json({ error: 'Pairing server error. Ensure number includes country code without + or spaces.' });
   }
 });
 
-// --- ANALYTICS & STATS ENDPOINTS ---
 app.get('/api/visit', (req, res) => {
   visitorCount++;
   res.json({ visitors: visitorCount });
@@ -180,4 +192,4 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-               
+  
