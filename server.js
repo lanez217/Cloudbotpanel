@@ -5,13 +5,18 @@ const fs = require('fs');
 const https = require('https');
 const http = require('http');
 const ffmpeg = require('fluent-ffmpeg');
+const ffmpegPath = require('ffmpeg-static');
 const { 
   default: makeWASocket, 
   useMultiFileAuthState, 
   delay, 
-  Browsers 
+  Browsers,
+  DisconnectReason 
 } = require('@whiskeysockets/baileys');
 const pino = require('pino');
+
+// Set static FFmpeg path for serverless/cloud hosting without terminal access
+ffmpeg.setFfmpegPath(ffmpegPath);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,6 +25,51 @@ app.use(express.json());
 app.use(express.static(__dirname));
 
 let visitorCount = 1024;
+
+// --- BAILEYS SESSIONS MANAGER ---
+// Stores active sockets so connection stays alive while user types the code in WhatsApp
+const activeSessions = new Map();
+
+async function getOrInitSocket(phoneNumber) {
+  const cleanNumber = phoneNumber.replace(/[^0-9]/g, '');
+  const authDir = path.join(__dirname, 'sessions', `session_${cleanNumber}`);
+
+  if (activeSessions.has(cleanNumber)) {
+    return { sock: activeSessions.get(cleanNumber), cleanNumber };
+  }
+
+  const { state, saveCreds } = await useMultiFileAuthState(authDir);
+
+  const sock = makeWASocket({
+    logger: pino({ level: 'silent' }),
+    printQRInTerminal: false,
+    auth: state,
+    browser: Browsers.ubuntu('Chrome'),
+    connectTimeoutMs: 60000,
+    defaultQueryTimeoutMs: 60000,
+    keepAliveIntervalMs: 10000,
+    syncFullHistory: false
+  });
+
+  sock.ev.on('creds.update', saveCreds);
+
+  sock.ev.on('connection.update', (update) => {
+    const { connection, lastDisconnect } = update;
+    if (connection === 'close') {
+      const shouldReconnect = (lastDisconnect?.error)?.output?.statusCode !== DisconnectReason.loggedOut;
+      activeSessions.delete(cleanNumber);
+      if (shouldReconnect) {
+        // Re-initialize if disconnected unexpectedly
+        getOrInitSocket(cleanNumber);
+      }
+    } else if (connection === 'open') {
+      console.log(`WhatsApp paired successfully for: ${cleanNumber}`);
+    }
+  });
+
+  activeSessions.set(cleanNumber, sock);
+  return { sock, cleanNumber };
+}
 
 // Helper to download remote file locally for FFmpeg processing
 function downloadFile(url, dest) {
@@ -44,7 +94,6 @@ app.post('/api/process-video', async (req, res) => {
   const { videoUrl, mode } = req.body;
   if (!videoUrl) return res.status(400).json({ error: 'Video URL required.' });
 
-  // Clean mode returns original URL directly
   if (mode === 'clean') {
     return res.json({ processedUrl: videoUrl });
   }
@@ -55,17 +104,15 @@ app.post('/api/process-video', async (req, res) => {
   try {
     await downloadFile(videoUrl, inputPath);
 
-    // Apply FFmpeg filters: Boxblur + Text Overlay
     ffmpeg(inputPath)
       .videoFilters([
-        'boxblur=10:10', // Blurs the video frames
+        'boxblur=10:10',
         "drawtext=text='LANEZ PURE OS':x=(w-text_w)/2:y=(h-text_h)/2:fontsize=36:fontcolor=white:box=1:boxcolor=black@0.6"
       ])
       .outputOptions('-preset ultrafast')
       .save(outputPath)
       .on('end', () => {
         res.sendFile(outputPath, () => {
-          // Cleanup temporary files after sending
           fs.unlink(inputPath, () => {});
           fs.unlink(outputPath, () => {});
         });
@@ -82,52 +129,30 @@ app.post('/api/process-video', async (req, res) => {
   }
 });
 
-// --- BAILEYS PAIRING SERVICE ---
-async function generatePairingCode(phoneNumber) {
-  const { state } = await useMultiFileAuthState(`./auth_temp_${Date.now()}`);
-  
-  const sock = makeWASocket({
-    logger: pino({ level: 'silent' }),
-    printQRInTerminal: false,
-    auth: state,
-    browser: Browsers.ubuntu('Chrome'),
-    connectTimeoutMs: 60000,
-    defaultQueryTimeoutMs: 60000,
-    keepAliveIntervalMs: 10000
-  });
-
-  const cleanNumber = phoneNumber.replace(/[^0-9]/g, '');
-  await delay(3000);
-
-  if (!sock.authState.creds.registered) {
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        const code = await sock.requestPairingCode(cleanNumber);
-        return code;
-      } catch (err) {
-        if (attempt === 3) throw err;
-        await delay(2000);
-      }
-    }
-  } else {
-    throw new Error('Device is already registered.');
-  }
-}
-
-// --- API ENDPOINTS ---
+// --- WHATSAPP PAIRING API ---
 app.post('/pair', async (req, res) => {
   const { number } = req.body;
   if (!number) return res.status(400).json({ error: 'Phone number is required.' });
 
   try {
-    const code = await generatePairingCode(number);
-    res.json({ code });
+    const { sock, cleanNumber } = await getOrInitSocket(number);
+
+    // Wait 3 seconds for WebSocket connection state to stabilize
+    await delay(3000);
+
+    if (!sock.authState.creds.registered) {
+      const code = await sock.requestPairingCode(cleanNumber);
+      return res.json({ code });
+    } else {
+      return res.status(400).json({ error: 'Device is already registered or paired.' });
+    }
   } catch (err) {
-    console.error('Pairing Error:', err);
-    res.status(500).json({ error: 'Failed to connect to WhatsApp.' });
+    console.error('Pairing Endpoint Error:', err);
+    res.status(500).json({ error: 'Failed to generate code. Ensure phone number is valid.' });
   }
 });
 
+// --- ANALYTICS & STATS ENDPOINTS ---
 app.get('/api/visit', (req, res) => {
   visitorCount++;
   res.json({ visitors: visitorCount });
@@ -150,4 +175,4 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-         
+           
