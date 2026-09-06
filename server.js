@@ -2,6 +2,7 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const https = require('https');
 const http = require('http');
 const ffmpeg = require('fluent-ffmpeg');
@@ -15,7 +16,7 @@ const {
 } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 
-// Set static FFmpeg path for serverless/cloud hosting without terminal access
+// Set static FFmpeg path
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 const app = express();
@@ -27,62 +28,74 @@ app.use(express.static(__dirname));
 let visitorCount = 1024;
 
 // --- BAILEYS SESSIONS MANAGER ---
-// Stores active sockets so connection stays alive while user types the code in WhatsApp
 const activeSessions = new Map();
 
-async function getOrInitSocket(phoneNumber) {
+async function getPairingCodeForNumber(phoneNumber) {
   const cleanNumber = phoneNumber.replace(/[^0-9]/g, '');
-  const authDir = path.join(__dirname, 'sessions', `session_${cleanNumber}`);
-
-  if (activeSessions.has(cleanNumber)) {
-    return { sock: activeSessions.get(cleanNumber), cleanNumber };
-  }
-
+  
+  // Store sessions in OS temporary directory to work safely on cloud hosts
+  const authDir = path.join(os.tmpdir(), `session_${cleanNumber}`);
   const { state, saveCreds } = await useMultiFileAuthState(authDir);
 
-  const sock = makeWASocket({
-    logger: pino({ level: 'silent' }),
-    printQRInTerminal: false,
-    auth: state,
-    browser: Browsers.ubuntu('Chrome'),
-    connectTimeoutMs: 60000,
-    defaultQueryTimeoutMs: 60000,
-    keepAliveIntervalMs: 10000,
-    syncFullHistory: false
-  });
+  return new Promise((resolve, reject) => {
+    const sock = makeWASocket({
+      logger: pino({ level: 'silent' }),
+      printQRInTerminal: false,
+      auth: state,
+      browser: Browsers.ubuntu('Chrome'),
+      connectTimeoutMs: 60000,
+      defaultQueryTimeoutMs: 60000,
+      keepAliveIntervalMs: 10000,
+      syncFullHistory: false
+    });
 
-  sock.ev.on('creds.update', saveCreds);
+    sock.ev.on('creds.update', saveCreds);
 
-  sock.ev.on('connection.update', (update) => {
-    const { connection, lastDisconnect } = update;
-    if (connection === 'close') {
-      const shouldReconnect = (lastDisconnect?.error)?.output?.statusCode !== DisconnectReason.loggedOut;
-      activeSessions.delete(cleanNumber);
-      if (shouldReconnect) {
-        // Re-initialize if disconnected unexpectedly
-        getOrInitSocket(cleanNumber);
+    sock.ev.on('connection.update', async (update) => {
+      const { connection, lastDisconnect } = update;
+
+      if (connection === 'open') {
+        activeSessions.set(cleanNumber, sock);
+      } else if (connection === 'close') {
+        activeSessions.delete(cleanNumber);
+        const code = lastDisconnect?.error?.output?.statusCode;
+        if (code !== DisconnectReason.loggedOut) {
+          // Clean up state if connection closed before code was fetched
+        }
       }
-    } else if (connection === 'open') {
-      console.log(`WhatsApp paired successfully for: ${cleanNumber}`);
-    }
-  });
+    });
 
-  activeSessions.set(cleanNumber, sock);
-  return { sock, cleanNumber };
+    // Request pairing code only after socket initializes
+    setTimeout(async () => {
+      try {
+        if (!sock.authState.creds.registered) {
+          const code = await sock.requestPairingCode(cleanNumber);
+          resolve(code);
+        } else {
+          reject(new Error('Device is already registered.'));
+        }
+      } catch (err) {
+        reject(err);
+      }
+    }, 4000);
+  });
 }
 
-// Helper to download remote file locally for FFmpeg processing
+// Helper to download remote file to temp folder
 function downloadFile(url, dest) {
   return new Promise((resolve, reject) => {
     const file = fs.createWriteStream(dest);
     const client = url.startsWith('https') ? https : http;
-    client.get(url, (response) => {
+    
+    const request = client.get(url, (response) => {
       if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
         return downloadFile(response.headers.location, dest).then(resolve).catch(reject);
       }
       response.pipe(file);
       file.on('finish', () => file.close(resolve));
-    }).on('error', (err) => {
+    });
+
+    request.on('error', (err) => {
       fs.unlink(dest, () => {});
       reject(err);
     });
@@ -98,8 +111,9 @@ app.post('/api/process-video', async (req, res) => {
     return res.json({ processedUrl: videoUrl });
   }
 
-  const inputPath = path.join(__dirname, `temp_in_${Date.now()}.mp4`);
-  const outputPath = path.join(__dirname, `temp_out_${Date.now()}.mp4`);
+  const timestamp = Date.now();
+  const inputPath = path.join(os.tmpdir(), `temp_in_${timestamp}.mp4`);
+  const outputPath = path.join(os.tmpdir(), `temp_out_${timestamp}.mp4`);
 
   try {
     await downloadFile(videoUrl, inputPath);
@@ -125,7 +139,7 @@ app.post('/api/process-video', async (req, res) => {
       });
   } catch (err) {
     console.error('Processing error:', err);
-    res.status(500).json({ error: 'Failed to download source video for processing.' });
+    res.status(500).json({ error: 'Failed to download source video.' });
   }
 });
 
@@ -135,20 +149,11 @@ app.post('/pair', async (req, res) => {
   if (!number) return res.status(400).json({ error: 'Phone number is required.' });
 
   try {
-    const { sock, cleanNumber } = await getOrInitSocket(number);
-
-    // Wait 3 seconds for WebSocket connection state to stabilize
-    await delay(3000);
-
-    if (!sock.authState.creds.registered) {
-      const code = await sock.requestPairingCode(cleanNumber);
-      return res.json({ code });
-    } else {
-      return res.status(400).json({ error: 'Device is already registered or paired.' });
-    }
+    const code = await getPairingCodeForNumber(number);
+    res.json({ code });
   } catch (err) {
-    console.error('Pairing Endpoint Error:', err);
-    res.status(500).json({ error: 'Failed to generate code. Ensure phone number is valid.' });
+    console.error('Pairing Error:', err);
+    res.status(500).json({ error: 'Connection closed or failed. Please check phone number and try again.' });
   }
 });
 
@@ -175,4 +180,4 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-           
+               
