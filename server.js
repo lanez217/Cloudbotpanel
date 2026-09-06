@@ -13,13 +13,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-
-// Serve the index.html and any other static assets from the current directory
 app.use(express.static(__dirname));
 
-// Track simple site analytics
 let visitorCount = 1024;
-const startTime = Date.now();
 
 // --- BAILEYS PAIRING SERVICE ---
 async function generatePairingCode(phoneNumber) {
@@ -55,47 +51,34 @@ async function generatePairingCode(phoneNumber) {
 
 // --- API ENDPOINTS ---
 
-// WhatsApp Pairing Route
 app.post('/pair', async (req, res) => {
   const { number } = req.body;
-  if (!number) {
-    return res.status(400).json({ error: 'Phone number is required.' });
-  }
+  if (!number) return res.status(400).json({ error: 'Phone number is required.' });
 
   try {
     const code = await generatePairingCode(number);
     res.json({ code });
   } catch (err) {
     console.error('Pairing Error:', err);
-    res.status(500).json({ error: 'Failed to connect to WhatsApp. Please try again.' });
+    res.status(500).json({ error: 'Failed to connect to WhatsApp.' });
   }
 });
 
-// Visitor Tracker Route
 app.get('/api/visit', (req, res) => {
   visitorCount++;
   res.json({ visitors: visitorCount });
 });
 
-// OS Stats Route
 app.get('/api/stats', (req, res) => {
-  res.json({
-    speed: '0.8s',
-    uptime: '99.9%',
-    visitors: visitorCount
-  });
+  res.json({ speed: '0.8s', uptime: '99.9%', visitors: visitorCount });
 });
 
-// Paystack Verification Route
 app.post('/api/verify-paystack', (req, res) => {
   const { reference } = req.body;
-  if (!reference) {
-    return res.status(400).json({ success: false, message: 'Missing transaction reference' });
-  }
+  if (!reference) return res.status(400).json({ success: false });
   res.json({ success: true, reference });
 });
 
-// Serve index.html on root access
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -103,4 +86,3 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-                                
