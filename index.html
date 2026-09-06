@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lanez Pure™ OS</title>
 
-<!-- Open Graph Meta Tags for WhatsApp/Social Shares -->
 <meta property="og:title" content="Lanez Pure™ OS — All Tools in One OS">
 <meta property="og:description" content="HD Video Downloader, WhatsApp Bot Pairing, and View Once Unlocker.">
 <meta property="og:type" content="website">
@@ -71,7 +71,6 @@ input:focus{border-color:gold}
   </div>
 </div>
 
-<!-- DOWNLOADER -->
 <div class="full" id="app-dl">
   <div class="box">
     <span class="back" onclick="goHome()">← Back to Main OS</span>
@@ -94,7 +93,6 @@ input:focus{border-color:gold}
   </div>
 </div>
 
-<!-- PAIR -->
 <div class="full" id="app-pair">
   <div class="box">
     <span class="back" onclick="goHome()">← Back to Main OS</span>
@@ -119,7 +117,6 @@ input:focus{border-color:gold}
   </div>
 </div>
 
-<!-- VIEW ONCE -->
 <div class="full" id="app-view">
   <div class="box">
     <span class="back" onclick="goHome()">← Back to Main OS</span>
@@ -155,7 +152,7 @@ input:focus{border-color:gold}
 
 <script>
 const $ = id => document.getElementById(id);
-const PAYSTACK_PUBLIC_KEY = "pk_test_YOUR_KEY_HERE"; // Replace with your Public Paystack Key
+const PAYSTACK_PUBLIC_KEY = "pk_test_YOUR_KEY_HERE"; 
 
 function openApp(name){
   $('mainSection').classList.add('hidden');
@@ -227,7 +224,7 @@ async function doDL(type){
     if(!videoUrl) {
       let c = await fetch(`https://api.cobalt.tools/api/json`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({ url: link, vQuality: "1080" })
       }).then(x=>x.json()).catch(()=>null);
       videoUrl = c?.url;
@@ -249,7 +246,7 @@ async function doDL(type){
       $('wmTag').innerText = 'WITH WATERMARK • FREE';
     }
   } catch(err) {
-    alert('Failed to extract media. Please ensure the link is public and formatted correctly.');
+    alert('Failed to extract media. Please check the link or ensure it is public.');
   } finally {
     btn.innerText = origText;
     btn.disabled = false;
@@ -284,7 +281,7 @@ async function doPair(){
       btn.disabled = false;
     }
   } catch {
-    alert('Pairing server unreachable.');
+    alert('Pairing request failed. Ensure server dependencies are up to date.');
     btn.innerText = 'Generate Pair Code';
     btn.disabled = false;
   } 
@@ -312,7 +309,7 @@ function pay(){
   let handler = PaystackPop.setup({
     key: PAYSTACK_PUBLIC_KEY,
     email: `user_${Date.now()}@lanezpure.com`,
-    amount: 500, // GHS 5.00 in pesewas
+    amount: 500,
     currency: 'GHS',
     callback: function(response){
       fetch('/api/verify-paystack', {
@@ -342,5 +339,4 @@ ui();
 setInterval(loadStats, 5000);
 </script>
 </body>
-    </html>
-        
+</html>
