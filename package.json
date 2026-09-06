@@ -1,19 +1,13 @@
 {
-  "name": "cloudbotpanel",
+  "name": "lanez-pure-os",
   "version": "1.0.0",
-  "description": "WhatsApp Bot Panel",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
-  "engines": {
-    "node": ">=18.0.0"
-  },
   "dependencies": {
-    "@whiskeysockets/baileys": "^6.7.10",
-    "dotenv": "^16.4.5",
+    "@whiskeysockets/baileys": "^6.7.0",
     "express": "^4.19.2",
-    "socket.io": "^4.7.5",
-    "yt-search": "^2.12.1"
+    "pino": "^9.0.0"
   }
 }
