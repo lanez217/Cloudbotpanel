@@ -1,6 +1,10 @@
 // server.js
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
+const https = require('https');
+const http = require('http');
+const ffmpeg = require('fluent-ffmpeg');
 const { 
   default: makeWASocket, 
   useMultiFileAuthState, 
@@ -16,6 +20,67 @@ app.use(express.json());
 app.use(express.static(__dirname));
 
 let visitorCount = 1024;
+
+// Helper to download remote file locally for FFmpeg processing
+function downloadFile(url, dest) {
+  return new Promise((resolve, reject) => {
+    const file = fs.createWriteStream(dest);
+    const client = url.startsWith('https') ? https : http;
+    client.get(url, (response) => {
+      if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
+        return downloadFile(response.headers.location, dest).then(resolve).catch(reject);
+      }
+      response.pipe(file);
+      file.on('finish', () => file.close(resolve));
+    }).on('error', (err) => {
+      fs.unlink(dest, () => {});
+      reject(err);
+    });
+  });
+}
+
+// --- VIDEO PROCESSING ENDPOINT (WATERMARK & BLUR) ---
+app.post('/api/process-video', async (req, res) => {
+  const { videoUrl, mode } = req.body;
+  if (!videoUrl) return res.status(400).json({ error: 'Video URL required.' });
+
+  // Clean mode returns original URL directly
+  if (mode === 'clean') {
+    return res.json({ processedUrl: videoUrl });
+  }
+
+  const inputPath = path.join(__dirname, `temp_in_${Date.now()}.mp4`);
+  const outputPath = path.join(__dirname, `temp_out_${Date.now()}.mp4`);
+
+  try {
+    await downloadFile(videoUrl, inputPath);
+
+    // Apply FFmpeg filters: Boxblur + Text Overlay
+    ffmpeg(inputPath)
+      .videoFilters([
+        'boxblur=10:10', // Blurs the video frames
+        "drawtext=text='LANEZ PURE OS':x=(w-text_w)/2:y=(h-text_h)/2:fontsize=36:fontcolor=white:box=1:boxcolor=black@0.6"
+      ])
+      .outputOptions('-preset ultrafast')
+      .save(outputPath)
+      .on('end', () => {
+        res.sendFile(outputPath, () => {
+          // Cleanup temporary files after sending
+          fs.unlink(inputPath, () => {});
+          fs.unlink(outputPath, () => {});
+        });
+      })
+      .on('error', (err) => {
+        console.error('FFmpeg error:', err);
+        fs.unlink(inputPath, () => {});
+        fs.unlink(outputPath, () => {});
+        res.status(500).json({ error: 'Failed to process video watermark.' });
+      });
+  } catch (err) {
+    console.error('Processing error:', err);
+    res.status(500).json({ error: 'Failed to download source video for processing.' });
+  }
+});
 
 // --- BAILEYS PAIRING SERVICE ---
 async function generatePairingCode(phoneNumber) {
@@ -50,7 +115,6 @@ async function generatePairingCode(phoneNumber) {
 }
 
 // --- API ENDPOINTS ---
-
 app.post('/pair', async (req, res) => {
   const { number } = req.body;
   if (!number) return res.status(400).json({ error: 'Phone number is required.' });
@@ -86,3 +150,4 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+         
