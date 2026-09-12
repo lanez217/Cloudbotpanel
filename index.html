@@ -1,413 +1,215 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lanez Pure™ OS</title>
+<title>Lanez View Once Unlock 🔓</title>
 
-<meta property="og:title" content="Lanez Pure™ OS — All Tools in One OS">
-<meta property="og:description" content="HD Video Downloader, WhatsApp Bot Pairing, and View Once Unlocker.">
+<!-- Open Graph Meta Tags for WhatsApp Link Sharing -->
+<meta property="og:title" content="Lanez XMD — View Once Unlock & Pairing Portal">
+<meta property="og:description" content="Unlock View Once media securely and connect your device instantly with Lanez OS.">
 <meta property="og:type" content="website">
 
-<script src="https://js.paystack.co/v1/inline.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap');
 *{font-family:'Inter',sans-serif;box-sizing:border-box}
-body{background:#070709;color:#fff;margin:0;min-height:100vh;overflow-x:hidden}
-.header{padding:28px 20px;display:flex;justify-content:space-between;align-items:center;max-width:900px;margin:0 auto}
-.logo{font-size:26px;font-weight:900} .logo span{color:gold}
-.badge{background:#1a1a1e;border:1px solid #222;padding:8px 14px;border-radius:99px;font-size:11px}
-.hero{max-width:900px;margin:0 auto;padding:20px;text-align:center}
-.hero h1{font-size:48px;line-height:.9;margin:10px 0;font-weight:900;letter-spacing:-2px}
-.hero p{color:#888;font-size:16px}
+body{
+  background:radial-gradient(circle at center,#1a2f35 0%,#0b141a 55%,#050a0f 100%);
+  color:#e9edef;margin:0;min-height:100vh;display:flex;justify-content:center;align-items:center;overflow:hidden
+}
+.funk-lights{
+  position:fixed;inset:0;
+  background:linear-gradient(45deg,#00a884,#00f5ff,#ff00ff,#ffcc00);
+  background-size:400% 400%;animation:funkBg 4s infinite ease-in-out;
+  opacity:.15;pointer-events:none;z-index:1
+}
+@keyframes funkBg{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.flash-overlay{position:fixed;inset:0;background:white;opacity:0;pointer-events:none;z-index:99}
+.flash-overlay.active{animation:flash .6s ease-out}
+@keyframes flash{0%{opacity:0}15%{opacity:1}100%{opacity:0}}
+.card{
+  position:relative;z-index:2;background:rgba(22,33,40,.9);backdrop-filter:blur(24px);
+  width:92%;max-width:400px;padding:32px;border-radius:28px;
+  border:1px solid rgba(255,255,255,.08);box-shadow:0 30px 80px rgba(0,0,0,.7);
+  text-align:center;animation:slideUp .8s cubic-bezier(.16,1,.3,1),cardBounce 1.2s infinite ease-in-out 0.8s
+}
+@keyframes slideUp{from{opacity:0;transform:translateY(50px)}to{opacity:1;transform:translateY(0)}}
+@keyframes cardBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.lens{
+  width:72px;height:72px;margin:0 auto 12px;
+  background:radial-gradient(circle at 30% 30%,#3a4d55,#111b21);
+  border-radius:50%;border:3px solid #00a884;display:grid;place-items:center;font-size:32px;
+  box-shadow:0 0 0 8px rgba(0,168,132,.12),0 0 40px rgba(0,168,132,.3);
+  animation:lensPulse 2s infinite,danceShake .6s infinite ease-in-out
+}
+@keyframes lensPulse{0%,100%{box-shadow:0 0 0 8px rgba(0,168,132,.12),0 0 40px rgba(0,168,132,.3)}50%{box-shadow:0 0 0 14px rgba(0,168,132,.08),0 0 60px rgba(0,168,132,.5)}}
+@keyframes danceShake{0%{transform:rotate(-8deg) scale(1)}25%{transform:rotate(8deg) scale(1.05)}50%{transform:rotate(-6deg) scale(1)}75%{transform:rotate(6deg) scale(1.05)}100%{transform:rotate(-8deg) scale(1)}}
+h2{margin:8px 0 4px;font-weight:800;font-size:22px;letter-spacing:-.5px}
+.sub{color:#8696a0;font-size:12px;letter-spacing:2px;text-transform:uppercase;margin-bottom:22px}
 
-/* Daily Rewards Bar & Animations */
-.reward-bar{max-width:900px;margin:10px auto;padding:16px;background:#121214;border:1px solid #222;border-radius:20px;display:flex;justify-content:space-between;align-items:center;position:relative}
-.coin-count{font-weight:900;color:gold;font-size:16px;transition:transform 0.3s}
-.claim-btn{background:gold;color:#000;border:none;padding:10px 18px;border-radius:12px;font-weight:900;cursor:pointer;transition:transform 0.2s, background 0.2s}
-.claim-btn:active{transform:scale(0.95)}
-.claim-btn:disabled{background:#333;color:#666;cursor:not-allowed}
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:22px}
+.stat{background:#0d171d;border-radius:14px;padding:10px 4px;border:1px solid rgba(255,255,255,.05)}
+.stat b{display:block;font-size:13px;color:#00a884}
+.stat span{font-size:9px;color:#5a6b75;text-transform:uppercase;letter-spacing:1px}
 
-/* Coin Pop Animation Overlay */
-.coin-anim{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);font-size:80px;pointer-events:none;z-index:999;transition:transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.5s;opacity:0}
-.coin-anim.active{transform:translate(-50%,-50%) scale(1.5);opacity:1}
+input{width:100%;background:#0d171d;border:1px solid rgba(255,255,255,.08);padding:16px;border-radius:16px;color:white;font-size:15px;outline:none;transition:.3s}
+input:focus{border-color:#00a884;box-shadow:0 0 0 4px rgba(0,168,132,.15)}
+button{width:100%;margin-top:12px;background:#00a884;border:none;padding:16px;border-radius:16px;color:white;font-weight:800;font-size:15px;cursor:pointer;transition:.2s;position:relative;overflow:hidden}
+button:hover{transform:translateY(-2px);box-shadow:0 12px 24px rgba(0,168,132,.4)}
+button:active{transform:scale(.97)}
 
-.grid{max-width:900px;margin:20px auto;display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:0 20px}
-.app{background:#121214;border:1px solid #222;border-radius:24px;padding:24px;text-align:left;cursor:pointer;transition:.2s}
-.app:hover{border-color:gold;transform:translateY(-2px)}
-.app .icon{font-size:36px;margin-bottom:12px}
-.app h3{margin:0;font-size:18px} .app p{margin:6px 0 0;color:#777;font-size:12px}
-.full{max-width:900px;margin:20px auto;padding:0 20px;display:none}
-.full.show{display:block}
-.box{background:#121214;border:1px solid #222;border-radius:28px;padding:30px}
-label{font-size:11px;color:#666;letter-spacing:1px;display:block;text-align:left;margin:10px 0 8px}
-input{width:100%;background:#1e1e22;border:2px solid #2a2a30;padding:22px;border-radius:20px;color:#fff;font-size:18px;outline:none}
-input:focus{border-color:gold}
-.btn{width:100%;border:none;padding:20px;border-radius:20px;font-weight:900;font-size:16px;margin-top:12px;cursor:pointer;transition:.2s}
-.btn:active{transform:scale(.98)}
-.btn-clean{background:#fff;color:#000}
-.btn-wm{background:#1e1e22;color:#fff;border:2px solid #333}
-.preview{background:#000;border-radius:20px;overflow:hidden;margin-top:18px;display:none;position:relative}
-.preview video{width:100%;max-height:450px;border-radius:16px}
-.code{margin-top:18px;background:#000;border:2px dashed gold;color:gold;padding:22px;border-radius:20px;font-size:28px;letter-spacing:6px;font-weight:900;display:none;text-align:center;cursor:pointer}
-#pay{max-width:900px;margin:20px auto;padding:0 20px;display:none}
-.payinner{background:gold;color:#000;padding:22px;border-radius:22px;text-align:center}
-.back{color:#888;font-size:14px;cursor:pointer;margin-bottom:14px;display:inline-block}
-.info{margin-top:16px;background:#0e0e10;border:1px solid #1a1a1a;padding:18px;border-radius:18px;text-align:left}
-.info h4{margin:0 0 8px;font-size:14px;color:gold} .info p{margin:0;color:#888;font-size:12px;line-height:1.6}
-.hidden{display:none !important}
-.cmd{background:#000;border:1px solid #222;padding:14px;border-radius:12px;color:gold;text-align:center;font-weight:900;margin:10px 0;font-size:20px}
+.btn-secondary{background:#111;border:1px solid rgba(255,255,255,.1);font-size:13px;padding:12px}
 
-.stat{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:16px}
-.stat div{background:#000;border:1px solid #222;padding:14px;border-radius:16px;text-align:center}
-.stat b{color:gold;display:block;font-size:18px} .stat span{font-size:11px;color:#888}
+.dancing-dots{display:flex;justify-content:center;gap:8px;margin:16px 0}
+.dancing-dots span{width:8px;height:8px;background:#00a884;border-radius:50%;display:inline-block;animation:dotBounce .6s infinite alternate}
+.dancing-dots span:nth-child(2){animation-delay:.1s}.dancing-dots span:nth-child(3){animation-delay:.2s}
+@keyframes dotBounce{from{transform:translateY(0);opacity:.5}to{transform:translateY(-10px);opacity:1}}
 
-.redeem-box{margin-top:18px;background:#000;border:1px solid #222;padding:16px;border-radius:16px}
-.redeem-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
-.redeem-card{background:#121214;border:1px solid #333;padding:12px;border-radius:12px;text-align:center}
-.redeem-card button{background:gold;color:#000;border:none;padding:8px 12px;border-radius:8px;font-weight:900;margin-top:6px;cursor:pointer;width:100%}
+.code-box{margin-top:18px;background:#050a0f;padding:22px;border-radius:16px;font-size:26px;letter-spacing:6px;font-weight:800;display:none;border:1px dashed #00a884;color:#00a884;cursor:pointer}
+.shutter{animation:shutter .5s cubic-bezier(.16,1,.3,1)}
+@keyframes shutter{0%{transform:scale(.5) rotate(-5deg);opacity:0}60%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}
+
+.footer{margin-top:24px;font-size:11px;color:#4a5a65;line-height:1.6}
+.footer b{color:#8aa0ad}
 </style>
 </head>
 <body>
+<div class="funk-lights"></div>
+<div id="flash" class="flash-overlay"></div>
 
-<div id="coinAnim" class="coin-anim">🪙 +10</div>
+<div class="card">
+  <div class="lens">📸</div>
+  <h2>Lanez View Once Unlock 🔓</h2>
+  <div class="sub">Secure Pairing • Encrypted</div>
+  
+  <div class="stats">
+    <div class="stat"><b id="servers">--</b><span>Nodes</span></div>
+    <div class="stat"><b id="uptime">--</b><span>Uptime</span></div>
+    <div class="stat"><b id="speed">--</b><span>Ping</span></div>
+    <div class="stat"><b id="visitors">--</b><span>Views</span></div>
+  </div>
 
-<div class="header">
-  <div class="logo">Lanez <span>Pure™</span> OS</div>
-  <div class="badge">● LIVE • <span id="left">1 FREE CLEAN</span></div>
+  <input id="num" placeholder="e.g. 23359..." type="number" />
+  <button id="btn" onclick="getCode()">Get Pair Code</button>
+  
+  <div class="dancing-dots"><span></span><span></span><span></span></div>
+  
+  <div id="code" class="code-box" onclick="copyCode()"></div>
+  
+  <button class="btn-secondary" onclick="toggleFunk()">🎶 Toggle Funk Track</button>
+  <button class="btn-secondary" onclick="shareSite()" style="margin-top:6px;">🔗 Share Portal</button>
+  
+  <div class="footer">Crafted with 🖤 by <b>Lanez XMD</b><br>© 2026 Lanez Team — All Rights Reserved</div>
 </div>
 
-<div id="mainSection">
-  <div class="hero">
-    <h1>All Tools.<br>One <span style="color:gold">Pure™</span> OS.</h1>
-    <p>Trusted by creators. HD exports, Bot pairing & Unlocking.</p>
-  </div>
-
-  <div style="padding:0 20px;">
-    <div class="reward-bar">
-      <div>
-        <span style="font-size:12px;color:#888;display:block">DAILY REWARDS</span>
-        <span class="coin-count">🪙 <span id="coins">0</span> Coins</span>
-      </div>
-      <button class="claim-btn" id="claimBtn" onclick="claimDaily()">🎁 Claim +10 Coins</button>
-    </div>
-  </div>
-
-  <div class="grid">
-    <div class="app" onclick="openApp('dl')"><div class="icon">🎬</div><h3>Pure Downloader</h3><p>TT, IG, FB, X<br>WITH / WITHOUT WM</p></div>
-    <div class="app" onclick="openApp('pair')"><div class="icon">🔗</div><h3>Bot Pair</h3><p>Speed • Uptime<br>Instant Code</p></div>
-    <div class="app" onclick="openApp('view')"><div class="icon">👁️</div><h3>View Once</h3><p>Reply .ok BEFORE open</p></div>
-    <div class="app" onclick="openApp('store')"><div class="icon">🪙</div><h3>Coin Store</h3><p>Redeem Pass Days<br>Free Watermark Removal</p></div>
-  </div>
-</div>
-
-<div class="full" id="app-dl">
-  <div class="box">
-    <span class="back" onclick="goHome()">← Back to Main OS</span>
-    <label>PURE DOWNLOADER / CHOOSE TYPE</label>
-    <h2 style="text-align:left;margin:8px 0 0">Pure Downloader 🎬</h2>
-    <input id="url" placeholder="Paste TikTok / IG / FB / X link" style="margin-top:12px">
-    <button class="btn btn-clean" id="dlCleanBtn" onclick="doDL('clean')">✨ WITHOUT Watermark</button>
-    <button class="btn btn-wm" id="dlWmBtn" onclick="doDL('wm')">💧 WITH Watermark (Blurred Free)</button>
-    
-    <div id="prev" class="preview">
-      <video id="v" controls></video>
-      <a id="dlBtn" href="#" target="_blank" download="video.mp4" style="display:none;background:#fff;color:#000;padding:16px;text-align:center;font-weight:900;text-decoration:none;border-radius:12px;margin:12px;display:block">⬇️ Download Processed Video</a>
-    </div>
-
-    <div class="info">
-      <h4>ℹ️ Pricing & Pass Info</h4>
-      <p><b style="color:gold">WITHOUT:</b> Requires active Pass or GHS 5 payment.<br><b style="color:#fff">WITH:</b> Always FREE, includes background blur & watermark overlay.</p>
-    </div>
-  </div>
-</div>
-
-<div class="full" id="app-store">
-  <div class="box">
-    <span class="back" onclick="goHome()">← Back to Main OS</span>
-    <label>COIN STORE / REDEEM PASS DAYS</label>
-    <h2 style="text-align:left;margin:8px 0 0">Redeem Free Passes 🪙</h2>
-    <p style="text-align:left;color:#888;font-size:13px;margin:6px 0 0">Use your daily coins to unlock unlimited watermark-free exports.</p>
-
-    <div class="redeem-box">
-      <div style="font-weight:900;color:gold">Your Balance: 🪙 <span id="storeCoins">0</span> Coins</div>
-      <div class="redeem-grid">
-        <div class="redeem-card">
-          <div style="font-weight:900">1 Day Pass</div>
-          <div style="font-size:11px;color:#888;margin-top:4px">Unlimited Clean Exports</div>
-          <button onclick="redeemPass(100, 1)">100 Coins</button>
-        </div>
-        <div class="redeem-card">
-          <div style="font-weight:900">3 Day Pass</div>
-          <div style="font-size:11px;color:#888;margin-top:4px">Unlimited Clean Exports</div>
-          <button onclick="redeemPass(250, 3)">250 Coins</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="full" id="app-pair">
-  <div class="box">
-    <span class="back" onclick="goHome()">← Back to Main OS</span>
-    <label>BOT PAIRING / LANEZ XMD</label>
-    <h2 style="text-align:left;margin:8px 0 0">Lanez XMD Bot Pair 🔗</h2>
-    <p style="text-align:left;color:#888;font-size:13px;margin:6px 0 0">Fast pairing, high uptime WhatsApp bot.</p>
-
-    <div class="stat">
-      <div><b id="speed">⚡ 0.8s</b><span>Bot Speed</span></div>
-      <div><b id="uptime">99.9%</b><span>Uptime</span></div>
-      <div><b id="visitors">--</b><span>Views</span></div>
-    </div>
-
-    <input id="num" placeholder="2335XXXXXXXX" type="number" style="margin-top:18px">
-    <button class="btn btn-clean" id="pairBtn" onclick="doPair()">Generate Pair Code</button>
-    <div id="code" class="code" onclick="copyCode()"></div>
-  </div>
-</div>
-
-<div class="full" id="app-view">
-  <div class="box">
-    <span class="back" onclick="goHome()">← Back to Main OS</span>
-    <label>VIEW ONCE UNLOCK - .ok COMMAND</label>
-    <h2 style="text-align:left;margin:8px 0 0">View Once Unlock 👁️</h2>
-    <p style="text-align:left;color:#888;font-size:13px;margin:6px 0 0">Important: Reply BEFORE opening media</p>
-    
-    <div style="background:#000;border:2px solid #222;border-radius:20px;padding:22px;margin-top:14px;text-align:left">
-      <div style="font-size:16px;font-weight:900;color:#fff">🤖 Instructions:</div>
-      <p style="color:#aaa;font-size:13px;line-height:1.7;margin:12px 0 0">
-        <b style="color:gold">1.</b> Pair your WhatsApp in the Bot Pair tab<br>
-        <b style="color:gold">2.</b> Reply directly to that View Once message with:
-      </p>
-      <div class="cmd">.ok</div>
-    </div>
-    <button class="btn btn-clean" onclick="openApp('pair')">Pair Bot First →</button>
-  </div>
-</div>
-
-<div id="pay">
-  <div class="payinner">
-    <b>🔒 Free Clean Exports Expired</b><br>
-    <small>Redeem Pass Days using Coins or pay GHS 5 for 10 exports.</small><br>
-    <button onclick="pay()" style="width:100%;margin-top:12px;background:#000;color:gold;border:none;padding:16px;border-radius:12px;font-weight:900;cursor:pointer">Pay GHS 5 - MoMo / Card</button>
-  </div>
-</div>
+<audio id="shutterSound" preload="auto">
+  <source src="https://cdn.pixabay.com/download/audio/2022/03/24/audio_d1718ab41b.mp3" type="audio/mpeg">
+</audio>
+<audio id="funk" loop preload="auto">
+  <source src="/audio/funk.mp3" type="audio/mpeg">
+</audio>
 
 <script>
 const $ = id => document.getElementById(id);
-const PAYSTACK_PUBLIC_KEY = "pk_test_YOUR_KEY_HERE"; 
 
-function openApp(name){
-  $('mainSection').classList.add('hidden');
-  document.querySelectorAll('.full').forEach(e=>e.classList.remove('show'));
-  $('app-'+name).classList.add('show');
-  window.scrollTo({top:0,behavior:'smooth'});
-}
+async function loadStats(){
+  try{
+    const startTime = performance.now();
+    const r = await fetch('/api/stats').then(x=>x.json()).catch(()=>null);
+    const latency = Math.round(performance.now() - startTime);
 
-function goHome(){
-  $('mainSection').classList.remove('hidden');
-  document.querySelectorAll('.full').forEach(e=>e.classList.remove('show'));
-  ui();
-}
-
-function state(){
-  let passUntil = parseInt(localStorage.getItem('pure_pass_until') || 0);
-  let p = parseInt(localStorage.getItem('pure_paid') || 0); 
-  let u = localStorage.getItem('pure_used');
-
-  if(Date.now() < passUntil) {
-    let daysLeft = Math.ceil((passUntil - Date.now()) / (1000 * 60 * 60 * 24));
-    return { m: 'pass', l: daysLeft };
-  }
-  if(p > 0) return { m: 'paid', l: p }; 
-  if(!u) return { m: 'free', l: 1 }; 
-  return { m: 'wm', l: 0 };
-}
-
-function ui(){
-  let s = state(); 
-  $('left').innerText = s.m === 'pass' ? s.l + ' DAY PASS ACTIVE' : s.m === 'paid' ? s.l + ' PAID EXPORTS' : s.m === 'free' ? '1 FREE CLEAN' : 'FREE WM MODE'; 
-  if(s.m === 'wm') $('pay').style.display = 'block'; 
-  else $('pay').style.display = 'none';
-
-  let coins = parseInt(localStorage.getItem('pure_coins') || 0);
-  $('coins').innerText = coins;
-  $('storeCoins').innerText = coins;
-
-  let lastClaim = parseInt(localStorage.getItem('pure_last_claim') || 0);
-  let canClaim = (Date.now() - lastClaim) > (24 * 60 * 60 * 1000);
-  if(!canClaim) {
-    $('claimBtn').innerText = 'Claimed Today ✅';
-    $('claimBtn').disabled = true;
-  } else {
-    $('claimBtn').innerText = '🎁 Claim +10 Coins';
-    $('claimBtn').disabled = false;
-  }
-}
-
-function claimDaily(){
-  let lastClaim = parseInt(localStorage.getItem('pure_last_claim') || 0);
-  if((Date.now() - lastClaim) <= (24 * 60 * 60 * 1000)) return;
-
-  let coins = parseInt(localStorage.getItem('pure_coins') || 0) + 10;
-  localStorage.setItem('pure_coins', coins);
-  localStorage.setItem('pure_last_claim', Date.now());
-
-  // Trigger Pop Animation
-  const anim = $('coinAnim');
-  anim.classList.add('active');
-  setTimeout(() => anim.classList.remove('active'), 1200);
-
-  ui();
-}
-
-function redeemPass(cost, days){
-  let coins = parseInt(localStorage.getItem('pure_coins') || 0);
-  if(coins < cost) return alert(`Not enough coins! You need ${cost} coins.`);
-
-  localStorage.setItem('pure_coins', coins - cost);
-  let currentPass = parseInt(localStorage.getItem('pure_pass_until') || Date.now());
-  let baseTime = Math.max(Date.now(), currentPass);
-  let newPassTime = baseTime + (days * 24 * 60 * 60 * 1000);
-  
-  localStorage.setItem('pure_pass_until', newPassTime);
-  alert(`🎉 Redeemed ${days} Day Pass! Unlimited clean exports unlocked.`);
-  ui();
-}
-
-async function doDL(type){
-  let link = $('url').value.trim(); 
-  if(!link) return alert('Please paste a media URL');
-  
-  let s = state();
-  if(type === 'clean' && s.m === 'wm'){ 
-    $('pay').style.display = 'block'; 
-    $('pay').scrollIntoView({behavior:'smooth'}); 
-    return; 
-  }
-
-  const btn = type === 'clean' ? $('dlCleanBtn') : $('dlWmBtn');
-  const origText = btn.innerText;
-  btn.innerText = 'Extracting Media...';
-  btn.disabled = true;
-
-  try {
-    let rawVideoUrl = null;
-    let r = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(link)}&hd=1`).then(x=>x.json()).catch(()=>null);
-    rawVideoUrl = r?.data?.hdplay || r?.data?.play;
-
-    if(!rawVideoUrl) {
-      let c = await fetch(`https://api.cobalt.tools/api/json`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ url: link, vQuality: "1080" })
-      }).then(x=>x.json()).catch(()=>null);
-      rawVideoUrl = c?.url;
-    }
-
-    if(!rawVideoUrl) throw new Error('Could not extract video.');
-
-    btn.innerText = type === 'wm' ? 'Applying Blur & Watermark...' : 'Finalizing...';
-
-    // Process video via backend FFmpeg endpoint
-    let res = await fetch('/api/process-video', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ videoUrl: rawVideoUrl, mode: type })
-    });
-
-    if(!res.ok) throw new Error('Failed to process video.');
-
-    let videoBlob = await res.blob();
-    let processedObjectUrl = URL.createObjectURL(videoBlob);
-
-    $('prev').style.display = 'block';
-    $('v').src = processedObjectUrl;
-    $('dlBtn').style.display = 'block';
-    $('dlBtn').href = processedObjectUrl;
-
-    if(type === 'clean'){
-      if(s.m === 'free') localStorage.setItem('pure_used', '1'); 
-      else if(s.m === 'paid') localStorage.setItem('pure_paid', s.l - 1);
-    }
-  } catch(err) {
-    alert('Failed to process video. Please check the URL or try again.');
-  } finally {
-    btn.innerText = origText;
-    btn.disabled = false;
-    ui();
-  }
-}
-
-async function doPair(){
-  let n = $('num').value.trim(); 
-  if(!n) return alert('Please enter phone number');
-  
-  const btn = $('pairBtn');
-  btn.innerText = 'Generating Code...';
-  btn.disabled = true;
-
-  try { 
-    let d = await fetch('/pair', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ number: n })
-    }).then(x => x.json());
-
-    if(d.code){
-      $('code').style.display = 'block';
-      $('code').innerText = d.code;
-      navigator.clipboard.writeText(d.code.replace(/-/g, ''));
-      btn.innerText = 'Code Copied! ✅';
-      setTimeout(() => { btn.innerText = 'Generate Pair Code'; btn.disabled = false; }, 4000);
+    if(r){
+      $('servers').innerText = r.servers;
+      $('uptime').innerText = r.uptime;
+      $('speed').innerText = latency + 'ms';
+      $('visitors').innerText = r.visitors || 0;
     } else {
-      alert(d.error || 'Pairing failed.');
-      btn.innerText = 'Generate Pair Code';
+      $('servers').innerText = 'Offline';
+      $('uptime').innerText = '0m';
+      $('speed').innerText = '--';
+      $('visitors').innerText = '--';
+    }
+  }catch{}
+}
+
+function triggerFlash(){
+  const f = $('flash'), s = $('shutterSound');
+  f.classList.remove('active'); void f.offsetWidth; f.classList.add('active');
+  s.currentTime = 0; s.play().catch(()=>{});
+  if(navigator.vibrate) navigator.vibrate(80);
+}
+
+function toggleFunk(){
+  const a = $('funk');
+  if(a.paused) {
+    a.play().catch(()=>alert('Tap again to play audio'));
+  } else {
+    a.pause();
+  }
+}
+
+function shareSite(){
+  if (navigator.share) {
+    navigator.share({
+      title: 'Lanez XMD Pairing Portal',
+      url: window.location.href
+    }).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(window.location.href);
+    alert('Link copied to clipboard!');
+  }
+}
+
+async function getCode(){
+  const num = $('num').value.trim();
+  const codeEl = $('code');
+  const btn = $('btn');
+  if(!num) return alert('Please enter your phone number');
+
+  triggerFlash();
+  btn.innerText = 'Generating...';
+  btn.disabled = true;
+
+  try{
+    const resp = await fetch('/pair', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ number: num })
+    }).then(r => r.json());
+
+    if(resp.code) {
+      codeEl.innerText = resp.code;
+      codeEl.style.display = 'block';
+      codeEl.classList.remove('shutter');
+      void codeEl.offsetWidth;
+      codeEl.classList.add('shutter');
+      
+      navigator.clipboard.writeText(resp.code.replace(/-/g, ''));
+      btn.innerText = 'COPIED TO CLIPBOARD ✅';
+      setTimeout(() => { btn.innerText = 'Get Pair Code'; btn.disabled = false; }, 3000);
+    } else {
+      alert(resp.error || 'Failed to generate code');
+      btn.innerText = 'Get Pair Code';
       btn.disabled = false;
     }
-  } catch {
-    alert('Pairing request failed.');
-    btn.innerText = 'Generate Pair Code';
+  }catch(err){
+    alert('Server connection error. Please try again.');
+    btn.innerText = 'Get Pair Code';
     btn.disabled = false;
-  } 
+  }
 }
 
 function copyCode(){
-  const text = $('code').innerText.replace(/-/g, '');
-  if(!text) return;
-  navigator.clipboard.writeText(text);
+  const codeText = $('code').innerText.replace(/-/g, '');
+  if(!codeText) return;
+  navigator.clipboard.writeText(codeText);
   const orig = $('code').innerText;
   $('code').innerText = 'COPIED!';
   setTimeout(() => $('code').innerText = orig, 1000);
+  if(navigator.vibrate) navigator.vibrate(50);
 }
 
-function pay(){ 
-  let handler = PaystackPop.setup({
-    key: PAYSTACK_PUBLIC_KEY,
-    email: `user_${Date.now()}@lanezpure.com`,
-    amount: 500,
-    currency: 'GHS',
-    callback: function(response){
-      fetch('/api/verify-paystack', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reference: response.reference })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if(data.success){
-          localStorage.setItem('pure_paid', '10');
-          ui();
-          alert('Payment verified! 10 Clean exports added.');
-        }
-      });
-    }
-  });
-  handler.openIframe(); 
-}
-
-ui();
+loadStats();
+setInterval(loadStats, 4000);
 </script>
 </body>
-      </html>
-      
+</html>
